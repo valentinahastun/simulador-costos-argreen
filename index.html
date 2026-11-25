@@ -586,10 +586,10 @@ function construirPDF(jsPDF, q, IMG) {
 
   // Pie como el catálogo
   doc.setDrawColor(210, 215, 222); doc.setLineWidth(0.3); doc.line(M, 276, W - M, 276);
-  doc.setTextColor(...NAVY); doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text('ARGREEN', M, 285);
+  doc.addImage(IMG.logo, 'PNG', M, 279.5, 32, 32 * 98 / 334);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(...GRIS);
   const pie = [q.contacto ? `${t.contacto}: ${q.contacto}` : '3812333124', 'Av. Juan Domingo Perón 2300', 'Complejo Altercity, Ed.3, P.1, Of.1, (4107) Yerba Buena, TUC/ARG.'];
-  doc.text(pie, 44, 281.5);
+  doc.text(pie, 52, 281.5);
   return doc;
 }
 
