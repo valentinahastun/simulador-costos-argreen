@@ -587,7 +587,7 @@
             </div>
 
             <div class="button-group">
-                <button class="btn btn-primary" onclick="descargarPDF()">📄 Descargar PDF</button>
+                <button class="btn btn-primary" onclick="descargarPDF()">📄 Descargar Cotización</button>
                 <button class="btn btn-secondary" onclick="limpiarFormulario()">🔄 Limpiar</button>
             </div>
         </div>
@@ -941,7 +941,7 @@
 
         function descargarPDF() {
             const elemento = document.createElement('div');
-            elemento.style.padding = '40px';
+            elemento.style.padding = '0';
             elemento.style.backgroundColor = '#fff';
             elemento.style.fontFamily = 'Arial, sans-serif';
 
@@ -957,65 +957,110 @@
             const costoTotalTN = parseFloat(document.getElementById('summary_costo').textContent.replace('USD ', '').split(' ')[0]);
             const margenTN = precioVentaTN - costoTotalTN;
             const profitPct = ((margenTN / costoTotalTN) * 100).toFixed(2);
+            const totalCosto = costoTotalTN * tn;
+            const totalFacturacion = precio_venta * tn;
 
             elemento.innerHTML = `
-                <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
-                    <h1 style="color: #2563eb; margin: 0; font-size: 32px;">🌾 SIMULADOR DE COSTOS</h1>
-                    <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">Argreen S.A. - Simulación de Exportación</p>
-                    <p style="color: #999; margin: 5px 0 0 0; font-size: 12px;">Generado: ${fecha}</p>
-                </div>
+                <div style="background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);">
+                    <!-- HEADER CON LOGO Y TÍTULO -->
+                    <div style="background-color: #fff; padding: 30px 40px; border-bottom: 4px solid #2d5a7b;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <div style="font-size: 28px; font-weight: bold; color: #2d5a7b; margin-bottom: 5px;">🌾 ARGREEN</div>
+                                <div style="font-size: 12px; color: #666; letter-spacing: 1px; font-weight: 600;">COTIZACIÓN DE EXPORTACIÓN</div>
+                            </div>
+                            <div style="text-align: right; color: #666; font-size: 12px;">
+                                <div><strong>Fecha:</strong> ${fecha}</div>
+                                <div style="margin-top: 5px;"><strong>Producto:</strong> ${producto}</div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div style="margin-bottom: 30px;">
-                    <h2 style="color: #333; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">📋 DATOS GENERALES</h2>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="background-color: #f8fafc;">
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Producto:</strong></td>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${producto}</td>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>TN:</strong></td>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${tn}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Contenedor:</strong></td>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${contenedor}</td>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Depósito:</strong></td>
-                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${deposito}</td>
-                        </tr>
-                    </table>
-                </div>
+                    <!-- FRANJA AZUL DATOS OPERACIÓN -->
+                    <div style="background-color: #2d5a7b; color: white; padding: 20px 40px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 20px 8px 0; font-size: 13px; border-right: 1px solid rgba(255,255,255,0.3);"><strong>Volumen:</strong> ${tn} TN</td>
+                                <td style="padding: 8px 20px 8px 20px; font-size: 13px; border-right: 1px solid rgba(255,255,255,0.3);"><strong>Contenedor:</strong> ${contenedor}</td>
+                                <td style="padding: 8px 20px 8px 20px; font-size: 13px; border-right: 1px solid rgba(255,255,255,0.3);"><strong>Depósito:</strong> ${deposito}</td>
+                                <td style="padding: 8px 0 8px 20px; font-size: 13px;"><strong>Origen:</strong> Argentina 🇦🇷</td>
+                            </tr>
+                        </table>
+                    </div>
 
-                <div style="margin-bottom: 30px;">
-                    <h2 style="color: #333; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">💰 ANÁLISIS FINANCIERO</h2>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="background-color: #f8fafc;">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">Precio Venta (USD/TN)</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #2563eb;">USD ${precioVentaTN.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">Costo Total (USD/TN)</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #666;">USD ${costoTotalTN.toFixed(2)}</td>
-                        </tr>
-                        <tr style="background-color: #f0fdf4; border: 2px solid #10b981;">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold; color: #10b981;">Margen (USD/TN)</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #10b981; font-size: 16px;">USD ${margenTN.toFixed(2)}</td>
-                        </tr>
-                        <tr style="background-color: #f0fdf4; border: 2px solid #10b981;">
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold; color: #10b981;">Profit (%)</td>
-                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #10b981; font-size: 16px;">${profitPct}%</td>
-                        </tr>
-                    </table>
-                </div>
+                    <!-- CONTENIDO -->
+                    <div style="padding: 40px;">
+                        <!-- DESGLOSE DE COSTOS -->
+                        <div style="margin-bottom: 35px;">
+                            <h2 style="color: #2d5a7b; font-size: 14px; font-weight: 700; border-bottom: 2px solid #2d5a7b; padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 0.5px;">ANÁLISIS DE COSTOS (USD/TN)</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <tr style="background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 10px 15px; font-weight: 600; color: #2d5a7b;">CONCEPTO</td>
+                                    <td style="padding: 10px 15px; text-align: right; font-weight: 600; color: #2d5a7b;">VALOR</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 10px 15px; color: #333;">Precio de Venta</td>
+                                    <td style="padding: 10px 15px; text-align: right; font-weight: 600; color: #2563eb;">USD ${precioVentaTN.toFixed(2)}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e0e0e0; background-color: #f9f9f9;">
+                                    <td style="padding: 10px 15px; color: #666;">Costo Total Operación</td>
+                                    <td style="padding: 10px 15px; text-align: right; color: #666;">USD ${costoTotalTN.toFixed(2)}</td>
+                                </tr>
+                                <tr style="background-color: #f0fdf4; border: 2px solid #10b981;">
+                                    <td style="padding: 12px 15px; font-weight: 700; color: #10b981;">Margen Unitario</td>
+                                    <td style="padding: 12px 15px; text-align: right; font-weight: 700; color: #10b981; font-size: 14px;">USD ${margenTN.toFixed(2)}</td>
+                                </tr>
+                            </table>
+                        </div>
 
-                <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #999; font-size: 12px;">
-                    <p>Este documento fue generado automáticamente por el Simulador de Costos de Argreen S.A.</p>
-                    <p>Confidencial - Uso interno</p>
+                        <!-- RENTABILIDAD -->
+                        <div style="margin-bottom: 35px;">
+                            <h2 style="color: #2d5a7b; font-size: 14px; font-weight: 700; border-bottom: 2px solid #2d5a7b; padding-bottom: 10px; margin-bottom: 15px; letter-spacing: 0.5px;">RENTABILIDAD</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <tr style="background-color: #f5f5f5; border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 10px 15px; font-weight: 600; color: #2d5a7b;">MÉTRICA</td>
+                                    <td style="padding: 10px 15px; text-align: right; font-weight: 600; color: #2d5a7b;">VALOR</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 10px 15px; color: #333;">Margen (USD/TN)</td>
+                                    <td style="padding: 10px 15px; text-align: right; font-weight: 600; color: #10b981;">USD ${margenTN.toFixed(2)}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e0e0e0; background-color: #f9f9f9;">
+                                    <td style="padding: 10px 15px; color: #666;">Rentabilidad (%)</td>
+                                    <td style="padding: 10px 15px; text-align: right; color: #10b981; font-weight: 700; font-size: 13px;">${profitPct}%</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e0e0e0;">
+                                    <td style="padding: 10px 15px; color: #333;">Costo Total Operación</td>
+                                    <td style="padding: 10px 15px; text-align: right; font-weight: 600;">USD ${totalCosto.toFixed(2)}</td>
+                                </tr>
+                                <tr style="background-color: #f0f7ff; border: 2px solid #2563eb;">
+                                    <td style="padding: 12px 15px; font-weight: 700; color: #2563eb;">Facturación Total</td>
+                                    <td style="padding: 12px 15px; text-align: right; font-weight: 700; color: #2563eb; font-size: 14px;">USD ${totalFacturacion.toFixed(2)}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- NOTAS -->
+                        <div style="background-color: #f5f5f5; padding: 15px; border-left: 4px solid #2d5a7b; margin-top: 30px; font-size: 11px; color: #666; line-height: 1.6;">
+                            <strong>Nota importante:</strong> Esta cotización está sujeta a variaciones en el tipo de cambio, disponibilidad de producto y condiciones de mercado. Para confirmar la operación, contacte con nuestro equipo comercial.
+                        </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div style="background-color: #2d5a7b; color: white; padding: 20px 40px; margin-top: 20px; font-size: 10px; text-align: center; line-height: 1.6;">
+                        <div style="font-weight: 700; margin-bottom: 5px;">ARGREEN S.A.</div>
+                        <div>Yerba Buena, Tucumán - Argentina 🇦🇷</div>
+                        <div>Av. Juan Domingo Perón 2300, Complejo Altercity, Ed.3, P.1, Of.1 (4107)</div>
+                        <div style="margin-top: 5px; opacity: 0.8;">Documento generado automáticamente | Confidencial</div>
+                    </div>
                 </div>
             `;
 
             const opt = {
-                margin: 10,
-                filename: `Simulador_${producto}_${tn}TN_${fecha.replace(/\//g, '-')}.pdf`,
+                margin: 0,
+                filename: `Cotizacion_${producto}_${tn}TN_${fecha.replace(/\//g, '-')}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
             };
 
