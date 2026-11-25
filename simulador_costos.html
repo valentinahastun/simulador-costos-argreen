@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Costos - Argreen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .info-box p {
+            font-size: 13px;
+            color: #0369a1;
+            margin: 0;
+        }
+
+        .cost-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .cost-row:last-child {
+            border-bottom: none;
+        }
+
+        .cost-row.header {
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-top: 2px solid var(--border);
+            border-bottom: 2px solid var(--border);
+            padding: 12px 0;
+        }
+
+        .cost-row.subtotal {
+            font-weight: 700;
+            background: #f8fafc;
+            padding: 12px 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+
+        .cost-label {
+            color: var(--text-secondary);
+        }
+
+        .cost-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-item {
+            margin: 15px 0;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .summary-box.profit-positive {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        }
+
+        .summary-box.profit-negative {
+            background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .metric.profit-positive .metric-value {
+            color: var(--success);
+        }
+
+        .metric.profit-negative .metric-value {
+            color: var(--danger);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        section {
+            margin-bottom: 30px;
+        }
+
+        section h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-divider {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid var(--border);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            header {
+                padding: 20px 15px;
+            }
+
+            header h1 {
+                font-size: 22px;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-value {
+                font-size: 24px;
+            }
+
+            .tabs {
+                gap: 5px;
+            }
+
+            .tab {
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+        }
+
+        .currency {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌾 Simulador de Costos</h1>
+            <p>Argreen S.A. - Simulador de Exportación</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event, 'entrada')">📋 Entrada de Datos</button>
+            <button class="tab" onclick="switchTab(event, 'costos')">💰 Desglose de Costos</button>
+            <button class="tab" onclick="switchTab(event, 'resumen')">📊 Resumen Final</button>
+            <button class="tab" onclick="switchTab(event, 'admin')">⚙️ Tarifas</button>
+        </div>
+
+        <!-- TAB 1: ENTRADA DE DATOS -->
+        <div id="entrada" class="tab-content active">
+            <div class="grid">
+                <!-- Producto -->
+                <div class="card">
+                    <div class="card-title">📦 Resumen del Producto</div>
+                    <div class="form-group">
+                        <label for="producto">Producto</label>
+                        <input type="text" id="producto" value="Cranberry" oninput="calcular()">
+                    </div>
+                    <div class="form-group">
+                        <label for="tn">TN a Exportar</label>
+                        <input type="number" id="tn" value="24" oninput="calcular()">
+                    </div>
+                    <div class="form-group">
+                        <label for="peso_bolsa">Peso Bolsa (kg)</label>
+                        <input type="number" id="peso_bolsa" value="25" oninput="calcular()">
+                    </div>
+                    <div class="form-group">
+                        <label for="precio_venta">Precio de Venta (USD/TN)</label>
+                        <input type="number" id="precio_venta" value="980" oninput="calcular()">
+                    </div>
+                </div>
+
+                <!-- Parámetros Operación -->
+                <div class="card">
+                    <div class="card-title">⚙️ Parámetros de Operación</div>
+                    <div class="form-group">
+                        <label for="tc">Tipo de Cambio (ARS/USD)</label>
+                        <input type="number" id="tc" value="1516" oninput="calcular()">
+                    </div>
+                    <div class="form-group">
+                        <label for="contenedor">Tipo de Contenedor</label>
+                        <select id="contenedor" onchange="calcular()">
+                            <option value="20'">20' (20 pies)</option>
+                            <option value="40'" selected>40' (40 pies)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="deposito">Depósito Fiscal</label>
+                        <select id="deposito" onchange="calcular()">
+                            <option value="CENSER" selected>CENSER</option>
+                            <option value="SAN_MARTIN">SAN MARTÍN</option>
+                            <option value="DEFIBE">DEFIBE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Servicios -->
+                <div class="card">
+                    <div class="card-title">🔍 Servicios y Fumigación</div>
+                    <div class="form-group">
+                        <label for="surveyor">Surveyor (Peso + Calidad)</label>
+                        <select id="surveyor" onchange="calcular()">
+                            <option value="ISB" selected>ISB</option>
+                            <option value="OPERAGRO">OPERAGRO</option>
+                            <option value="BIOFIX">BIOFIX</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fumigacion">Proveedor Fumigación</label>
+                        <select id="fumigacion" onchange="calcular()">
+                            <option value="ISB" selected>ISB</option>
+                            <option value="OPERAGRO">OPERAGRO</option>
+                            <option value="BIOFIX">BIOFIX</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo_fumigacion">Tipo de Fumigación</label>
+                        <select id="tipo_fumigacion" onchange="calcular()">
+                            <option value="Fosfuro" selected>Fosfuro</option>
+                            <option value="Bromuro">Bromuro</option>
+                            <option value="Ninguno">Ninguno</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Adicionales -->
+                <div class="card">
+                    <div class="card-title">➕ Opciones Adicionales</div>
+                    <div class="form-group">
+                        <label for="manta_gel">¿Manta Gel?</label>
+                        <select id="manta_gel" onchange="calcular()">
+                            <option value="NO" selected>No</option>
+                            <option value="SI">Sí</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="forrado">¿Forrado?</label>
+                        <select id="forrado" onchange="calcular()">
+                            <option value="NO">No</option>
+                            <option value="SI" selected>Sí</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mercaderia">Tipo de Mercadería</label>
+                        <select id="mercaderia" onchange="calcular()">
+                            <option value="Procesada" selected>Procesada</option>
+                            <option value="Natural">Natural</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="precio_compra">Precio de Compra (USD/TN)</label>
+                        <input type="number" id="precio_compra" value="670" oninput="calcular()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="info-box">
+                    <p>💡 Los cálculos se actualizan automáticamente al cambiar los valores. Ve a la pestaña "Desglose de Costos" para ver el detalle de cada gasto.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: DESGLOSE DE COSTOS -->
+        <div id="costos" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">📦 Consolidado/Terminal</div>
+                    <div id="costos_consolidado"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">💼 Gastos Operativos</div>
+                    <div id="costos_operativos"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📦 Gastos Mercadería</div>
+                    <div id="costos_mercaderia"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🌊 Gastos Marítimos</div>
+                    <div id="costos_maritimos"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: RESUMEN FINAL -->
+        <div id="resumen" class="tab-content">
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <div class="summary-item">
+                        <div class="summary-label">Precio de Venta</div>
+                        <div class="summary-value" id="summary_precio">USD 980 <span class="currency">/TN</span></div>
+                    </div>
+                </div>
+
+                <div class="summary-box" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                    <div class="summary-item">
+                        <div class="summary-label">Costo Total</div>
+                        <div class="summary-value" id="summary_costo">USD 586 <span class="currency">/TN</span></div>
+                    </div>
+                </div>
+
+                <div class="summary-box profit-positive">
+                    <div class="summary-item">
+                        <div class="summary-label">Margen (USD/TN)</div>
+                        <div class="summary-value" id="summary_margen">USD 394</div>
+                    </div>
+                </div>
+
+                <div class="summary-box profit-positive">
+                    <div class="summary-item">
+                        <div class="summary-label">Profit (%)</div>
+                        <div class="summary-value" id="summary_profit">67.2%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h2>Métricas de Operación</h2>
+                <div class="summary-grid">
+                    <div class="metric">
+                        <div class="metric-label">Bolsas Aprox.</div>
+                        <div class="metric-value" id="metric_bolsas">960</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Contenedores</div>
+                        <div class="metric-value" id="metric_contenedores">1</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Costo Total (USD)</div>
+                        <div class="metric-value" id="metric_costo_total">USD 14,064</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Facturación (USD)</div>
+                        <div class="metric-value" id="metric_facturacion">USD 23,520</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="descargarPDF()">📄 Descargar PDF</button>
+                <button class="btn btn-secondary" onclick="limpiarFormulario()">🔄 Limpiar</button>
+            </div>
+        </div>
+
+        <!-- TAB 4: ADMINISTRACIÓN DE TARIFAS -->
+        <div id="admin" class="tab-content">
+            <div class="card">
+                <div class="card-title">⚙️ Administración de Tarifas</div>
+                <div class="info-box">
+                    <p>💾 Las tarifas se guardan automáticamente en tu navegador. Cambialas aquí y se aplicarán en los cálculos.</p>
+                </div>
+
+                <section>
+                    <h2>Tarifas Surveyor (USD)</h2>
+                    <div id="tarifas_surveyor_form"></div>
+                </section>
+
+                <section class="section-divider">
+                    <h2>Tarifas Depósito (USD)</h2>
+                    <div id="tarifas_deposito_form"></div>
+                </section>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="guardarTarifas()">💾 Guardar Cambios</button>
+                    <button class="btn btn-secondary" onclick="restaurarTarifasDefecto()">🔄 Restaurar Defecto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        // Tarifas por defecto
+        const tarifasSurveyorDefecto = {
+            'Peso + Calidad': { 'ISB_20': 150, 'ISB_40': 180, 'OPERAGRO_20': 70, 'OPERAGRO_40': 70 },
+            'Fosfuro': { 'ISB_20': 35, 'ISB_40': 90, 'OPERAGRO_20': 0, 'OPERAGRO_40': 0, 'BIOFIX_20': 50, 'BIOFIX_40': 60 },
+            'Bromuro': { 'ISB_20': 180, 'ISB_40': 350, 'BIOFIX_20': 110, 'BIOFIX_40': 180 },
+            'Manta Gel': { 'ISB_20': 60, 'ISB_40': 110, 'BIOFIX_20': 50, 'BIOFIX_40': 80 },
+            'Forrado': { 'ISB_20': 50, 'ISB_40': 80, 'BIOFIX_20': 35, 'BIOFIX_40': 60 },
+            'Ingreso': { 'ISB_20': 85, 'ISB_40': 110 }
+        };
+
+        const tarifasDepositoDefecto = {
+            'CENSER_20': 835,
+            'CENSER_40': 955,
+            'SAN_MARTIN_20': 910,
+            'SAN_MARTIN_40': 989,
+            'DEFIBE_20': 820,
+            'DEFIBE_40': 820
+        };
+
+        // Cargar tarifas desde localStorage o usar defaults
+        let tarifasSurveyor = cargarTarifas('tarifasSurveyor', tarifasSurveyorDefecto);
+        let tarifasDeposito = cargarTarifas('tarifasDeposito', tarifasDepositoDefecto);
+
+        function cargarTarifas(key, defecto) {
+            const guardado = localStorage.getItem(key);
+            if (guardado) {
+                try {
+                    return JSON.parse(guardado);
+                } catch (e) {
+                    console.log('Error al cargar tarifas, usando defecto');
+                    return defecto;
+                }
+            }
+            return defecto;
+        }
+
+        function guardarTarifas() {
+            // Guardar tarifas Surveyor
+            const surveyorInputs = document.querySelectorAll('[data-tarifa-type="surveyor"]');
+            const nuevasSurveyor = {};
+
+            surveyorInputs.forEach(input => {
+                const servicio = input.dataset.servicio;
+                const tipo = input.dataset.tipo;
+                if (!nuevasSurveyor[servicio]) nuevasSurveyor[servicio] = {};
+                nuevasSurveyor[servicio][tipo] = parseFloat(input.value) || 0;
+            });
+
+            // Guardar tarifas Depósito
+            const depositoInputs = document.querySelectorAll('[data-tarifa-type="deposito"]');
+            const nuevasDeposito = {};
+
+            depositoInputs.forEach(input => {
+                const key = input.dataset.key;
+                nuevasDeposito[key] = parseFloat(input.value) || 0;
+            });
+
+            localStorage.setItem('tarifasSurveyor', JSON.stringify(nuevasSurveyor));
+            localStorage.setItem('tarifasDeposito', JSON.stringify(nuevasDeposito));
+
+            tarifasSurveyor = nuevasSurveyor;
+            tarifasDeposito = nuevasDeposito;
+
+            calcular();
+            alert('✓ Tarifas guardadas correctamente');
+        }
+
+        function restaurarTarifasDefecto() {
+            if (confirm('¿Estás seguro? Se restaurarán todas las tarifas al valor original.')) {
+                localStorage.removeItem('tarifasSurveyor');
+                localStorage.removeItem('tarifasDeposito');
+                tarifasSurveyor = JSON.parse(JSON.stringify(tarifasSurveyorDefecto));
+                tarifasDeposito = JSON.parse(JSON.stringify(tarifasDepositoDefecto));
+                mostrarFormuarioTarifas();
+                calcular();
+                alert('✓ Tarifas restauradas al defecto');
+            }
+        }
+
+        function mostrarFormuarioTarifas() {
+            let html = '<div class="grid">';
+
+            // Surveyor
+            for (const [servicio, tipos] of Object.entries(tarifasSurveyor)) {
+                html += '<div class="card"><div class="card-title">' + servicio + '</div>';
+                for (const [tipo, valor] of Object.entries(tipos)) {
+                    html += `
+                        <div class="form-group">
+                            <label>${tipo.replace(/_/g, ' ')}</label>
+                            <input type="number" data-tarifa-type="surveyor" data-servicio="${servicio}" data-tipo="${tipo}" value="${valor}" step="0.01">
+                        </div>
+                    `;
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+
+            document.getElementById('tarifas_surveyor_form').innerHTML = html;
+
+            // Deposito
+            html = '<div class="grid">';
+            for (const [key, valor] of Object.entries(tarifasDeposito)) {
+                const label = key.replace(/_/g, ' - ');
+                html += `
+                    <div class="card">
+                        <div class="form-group">
+                            <label>${label}</label>
+                            <input type="number" data-tarifa-type="deposito" data-key="${key}" value="${valor}" step="0.01">
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            document.getElementById('tarifas_deposito_form').innerHTML = html;
+        }
+
+        function switchTab(e, tabName) {
+            // Ocultar todos los tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Remover clase active de todos los botones
+            const buttons = document.querySelectorAll('.tab');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Mostrar tab seleccionado
+            document.getElementById(tabName).classList.add('active');
+            e.target.classList.add('active');
+        }
+
+        function calcular() {
+            const tn = parseFloat(document.getElementById('tn').value) || 0;
+            const peso_bolsa = parseFloat(document.getElementById('peso_bolsa').value) || 25;
+            const precio_venta = parseFloat(document.getElementById('precio_venta').value) || 0;
+            const precio_compra = parseFloat(document.getElementById('precio_compra').value) || 0;
+            const tc = parseFloat(document.getElementById('tc').value) || 1516;
+            const contenedor = document.getElementById('contenedor').value;
+            const deposito = document.getElementById('deposito').value;
+            const surveyor = document.getElementById('surveyor').value;
+            const fumigacion = document.getElementById('fumigacion').value;
+            const tipo_fumigacion = document.getElementById('tipo_fumigacion').value;
+            const manta_gel = document.getElementById('manta_gel').value;
+            const forrado = document.getElementById('forrado').value;
+
+            // Cálculos básicos
+            const bolsas = (tn * 1000) / peso_bolsa;
+            const cant_contenedores = Math.ceil(tn / 24);
+            const costo_total_usd = precio_compra * tn;
+            const facturacion = precio_venta * tn;
+
+            // Tarifa consolidación
+            const key_consolidado = `${deposito}_${contenedor.substring(0, 2)}`;
+            const costo_consolidado = tarifasDeposito[key_consolidado] || 835;
+
+            // Tarifa surveyor
+            const surveyor_key = `${surveyor}_${contenedor.substring(0, 2)}`;
+            const costo_surveyor = (tipo_fumigacion === 'Fosfuro') ? 0 : (tarifasSurveyor['Peso + Calidad'][surveyor_key] || 150);
+
+            // Fumigación
+            let costo_fumigacion = 0;
+            if (tipo_fumigacion === 'Fosfuro') {
+                if (contenedor === "20'") {
+                    costo_fumigacion = cant_contenedores >= 5 ? 165 : 200;
+                } else {
+                    costo_fumigacion = 330;
+                }
+            }
+
+            // Manta Gel
+            const costo_manta = (manta_gel === 'SI') ? (tarifasSurveyor['Manta Gel'][surveyor_key] || 60) : 0;
+
+            // Forrado
+            const costo_forrado = (forrado === 'SI') ? (tarifasSurveyor['Forrado'][surveyor_key] || 50) : 0;
+
+            // Ingreso terminal
+            const costo_ingreso = tarifasSurveyor['Ingreso'][contenedor.substring(0, 2) === '20' ? 'ISB_20' : 'ISB_40'] || 110;
+
+            // Costos por TN
+            const costo_consolidado_tn = costo_consolidado / 24;
+            const costo_surveyor_tn = costo_surveyor / 24;
+            const costo_fumigacion_tn = costo_fumigacion / 24;
+            const costo_manta_tn = costo_manta / 24;
+            const costo_forrado_tn = costo_forrado / 24;
+            const costo_ingreso_tn = costo_ingreso / 24;
+
+            // Gastos operativos (simplificado)
+            const costo_honorarios_tn = 0.008 * (precio_venta - 586);
+            const costo_gastos_op_tn = 30 / tn;
+            const costo_movilidad_form_tn = 49 / tn;
+            const costo_movilidad_senasa_tn = (18000 / tc) / tn;
+            const costo_cofito_tn = ((28000 + 5000 + 300*tn + 60000) / tc) / tn / tc;
+            const costo_precitado_tn = (5000 * cant_contenedores) / tn / tc;
+            const costo_scanner_tn = (6000 / tc) / 24;
+
+            // Gastos mercadería
+            const costo_comision_compra_tn = 10;
+            const costo_mercaderia_tn = precio_compra;
+            const costo_flete_planta_tn = 90000 / tc;
+            const costo_etiquetas_tn = (18.5 / tc) * 960 / 24;
+            const costo_etiquetado_tn = (1000 / peso_bolsa) * (20 / tc);
+
+            // Gastos marítimos
+            const costo_envio_doc_tn = (100000 / tc) / tn;
+            const costo_financiero_tn = 0;
+            const costo_comision_broker_tn = 0.02 * (precio_venta - 586);
+            const costo_gastos_locales_tn = (620 / cant_contenedores) / 24;
+            const costo_flete_maritimo_tn = 1600 / 24;
+            const costo_bl_tn = 65 / tn;
+
+            // Costo total por TN
+            const costo_total_tn = costo_consolidado_tn + costo_surveyor_tn + costo_fumigacion_tn +
+                                   costo_manta_tn + costo_forrado_tn + costo_ingreso_tn +
+                                   costo_honorarios_tn + costo_gastos_op_tn + costo_movilidad_form_tn +
+                                   costo_movilidad_senasa_tn + costo_cofito_tn + costo_precitado_tn + costo_scanner_tn +
+                                   costo_comision_compra_tn + costo_mercaderia_tn + costo_flete_planta_tn +
+                                   costo_etiquetas_tn + costo_etiquetado_tn +
+                                   costo_envio_doc_tn + costo_financiero_tn + costo_comision_broker_tn +
+                                   costo_gastos_locales_tn + costo_flete_maritimo_tn + costo_bl_tn;
+
+            const margen_tn = precio_venta - costo_total_tn;
+            const profit_percent = ((margen_tn / costo_total_tn) * 100).toFixed(2);
+
+            // Actualizar resumen
+            document.getElementById('summary_precio').innerHTML = `USD ${precio_venta.toFixed(2)} <span class="currency">/TN</span>`;
+            document.getElementById('summary_costo').innerHTML = `USD ${costo_total_tn.toFixed(2)} <span class="currency">/TN</span>`;
+            document.getElementById('summary_margen').innerHTML = `USD ${margen_tn.toFixed(2)}`;
+            document.getElementById('summary_profit').innerHTML = `${profit_percent}%`;
+
+            document.getElementById('metric_bolsas').textContent = Math.round(bolsas);
+            document.getElementById('metric_contenedores').textContent = cant_contenedores;
+            document.getElementById('metric_costo_total').textContent = `USD ${(costo_total_tn * tn).toFixed(2)}`;
+            document.getElementById('metric_facturacion').textContent = `USD ${facturacion.toFixed(2)}`;
+
+            // Cambiar color del profit
+            const profitBox = document.querySelector('.summary-box.profit-positive');
+            if (margen_tn < 0) {
+                profitBox.classList.remove('profit-positive');
+                profitBox.classList.add('profit-negative');
+            } else {
+                profitBox.classList.remove('profit-negative');
+                profitBox.classList.add('profit-positive');
+            }
+
+            // Actualizar desglose de costos
+            actualizarDesglose({
+                consolidado: costo_consolidado_tn,
+                surveyor: costo_surveyor_tn,
+                fumigacion: costo_fumigacion_tn,
+                manta: costo_manta_tn,
+                forrado: costo_forrado_tn,
+                ingreso: costo_ingreso_tn,
+                honorarios: costo_honorarios_tn,
+                gastos_op: costo_gastos_op_tn,
+                movilidad_form: costo_movilidad_form_tn,
+                movilidad_senasa: costo_movilidad_senasa_tn,
+                cofito: costo_cofito_tn,
+                precitado: costo_precitado_tn,
+                scanner: costo_scanner_tn,
+                comision_compra: costo_comision_compra_tn,
+                mercaderia: costo_mercaderia_tn,
+                flete_planta: costo_flete_planta_tn,
+                etiquetas: costo_etiquetas_tn,
+                etiquetado: costo_etiquetado_tn,
+                envio_doc: costo_envio_doc_tn,
+                financiero: costo_financiero_tn,
+                comision_broker: costo_comision_broker_tn,
+                gastos_locales: costo_gastos_locales_tn,
+                flete_maritimo: costo_flete_maritimo_tn,
+                bl: costo_bl_tn,
+                total: costo_total_tn
+            });
+        }
+
+        function actualizarDesglose(costos) {
+            const formatoUSD = (valor) => `USD ${valor.toFixed(2)}`;
+
+            document.getElementById('costos_consolidado').innerHTML = `
+                <div class="cost-row"><span class="cost-label">Consolidación</span><span class="cost-value">${formatoUSD(costos.consolidado)}</span></div>
+                <div class="cost-row"><span class="cost-label">Surveyor (Peso + Calidad)</span><span class="cost-value">${formatoUSD(costos.surveyor)}</span></div>
+                <div class="cost-row"><span class="cost-label">Fumigación</span><span class="cost-value">${formatoUSD(costos.fumigacion)}</span></div>
+                <div class="cost-row"><span class="cost-label">Manta Gel</span><span class="cost-value">${formatoUSD(costos.manta)}</span></div>
+                <div class="cost-row"><span class="cost-label">Forrado</span><span class="cost-value">${formatoUSD(costos.forrado)}</span></div>
+                <div class="cost-row"><span class="cost-label">Ingreso Terminal</span><span class="cost-value">${formatoUSD(costos.ingreso)}</span></div>
+                <div class="cost-row subtotal"><span class="cost-label">Subtotal</span><span class="cost-value">${formatoUSD(costos.consolidado + costos.surveyor + costos.fumigacion + costos.manta + costos.forrado + costos.ingreso)}</span></div>
+            `;
+
+            document.getElementById('costos_operativos').innerHTML = `
+                <div class="cost-row"><span class="cost-label">Honorarios Despachante</span><span class="cost-value">${formatoUSD(costos.honorarios)}</span></div>
+                <div class="cost-row"><span class="cost-label">Gastos Operativos</span><span class="cost-value">${formatoUSD(costos.gastos_op)}</span></div>
+                <div class="cost-row"><span class="cost-label">Movilidad y Formulario</span><span class="cost-value">${formatoUSD(costos.movilidad_form)}</span></div>
+                <div class="cost-row"><span class="cost-label">Movilidad SENASA</span><span class="cost-value">${formatoUSD(costos.movilidad_senasa)}</span></div>
+                <div class="cost-row"><span class="cost-label">CO + FITO</span><span class="cost-value">${formatoUSD(costos.cofito)}</span></div>
+                <div class="cost-row"><span class="cost-label">Precitado</span><span class="cost-value">${formatoUSD(costos.precitado)}</span></div>
+                <div class="cost-row"><span class="cost-label">Scanner</span><span class="cost-value">${formatoUSD(costos.scanner)}</span></div>
+                <div class="cost-row subtotal"><span class="cost-label">Subtotal</span><span class="cost-value">${formatoUSD(costos.honorarios + costos.gastos_op + costos.movilidad_form + costos.movilidad_senasa + costos.cofito + costos.precitado + costos.scanner)}</span></div>
+            `;
+
+            document.getElementById('costos_mercaderia').innerHTML = `
+                <div class="cost-row"><span class="cost-label">Comisión de Compra</span><span class="cost-value">${formatoUSD(costos.comision_compra)}</span></div>
+                <div class="cost-row"><span class="cost-label">Mercadería</span><span class="cost-value">${formatoUSD(costos.mercaderia)}</span></div>
+                <div class="cost-row"><span class="cost-label">Flete Planta a Bs As</span><span class="cost-value">${formatoUSD(costos.flete_planta)}</span></div>
+                <div class="cost-row"><span class="cost-label">Impresión Etiquetas</span><span class="cost-value">${formatoUSD(costos.etiquetas)}</span></div>
+                <div class="cost-row"><span class="cost-label">Etiquetado</span><span class="cost-value">${formatoUSD(costos.etiquetado)}</span></div>
+                <div class="cost-row subtotal"><span class="cost-label">Subtotal</span><span class="cost-value">${formatoUSD(costos.comision_compra + costos.mercaderia + costos.flete_planta + costos.etiquetas + costos.etiquetado)}</span></div>
+            `;
+
+            document.getElementById('costos_maritimos').innerHTML = `
+                <div class="cost-row"><span class="cost-label">Envío de Documentos</span><span class="cost-value">${formatoUSD(costos.envio_doc)}</span></div>
+                <div class="cost-row"><span class="cost-label">Gastos Financieros</span><span class="cost-value">${formatoUSD(costos.financiero)}</span></div>
+                <div class="cost-row"><span class="cost-label">Comisión Broker</span><span class="cost-value">${formatoUSD(costos.comision_broker)}</span></div>
+                <div class="cost-row"><span class="cost-label">Gastos Locales Marítima</span><span class="cost-value">${formatoUSD(costos.gastos_locales)}</span></div>
+                <div class="cost-row"><span class="cost-label">Flete Marítimo</span><span class="cost-value">${formatoUSD(costos.flete_maritimo)}</span></div>
+                <div class="cost-row"><span class="cost-label">Gastos BL Marítima</span><span class="cost-value">${formatoUSD(costos.bl)}</span></div>
+                <div class="cost-row subtotal"><span class="cost-label">Subtotal</span><span class="cost-value">${formatoUSD(costos.envio_doc + costos.financiero + costos.comision_broker + costos.gastos_locales + costos.flete_maritimo + costos.bl)}</span></div>
+            `;
+        }
+
+        function descargarPDF() {
+            const elemento = document.createElement('div');
+            elemento.style.padding = '40px';
+            elemento.style.backgroundColor = '#fff';
+            elemento.style.fontFamily = 'Arial, sans-serif';
+
+            const fecha = new Date().toLocaleDateString('es-AR');
+            const producto = document.getElementById('producto').value;
+            const tn = parseFloat(document.getElementById('tn').value);
+            const precio_venta = parseFloat(document.getElementById('precio_venta').value);
+            const precio_compra = parseFloat(document.getElementById('precio_compra').value);
+            const contenedor = document.getElementById('contenedor').value;
+            const deposito = document.getElementById('deposito').value;
+
+            const precioVentaTN = precio_venta;
+            const costoTotalTN = parseFloat(document.getElementById('summary_costo').textContent.replace('USD ', '').split(' ')[0]);
+            const margenTN = precioVentaTN - costoTotalTN;
+            const profitPct = ((margenTN / costoTotalTN) * 100).toFixed(2);
+
+            elemento.innerHTML = `
+                <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
+                    <h1 style="color: #2563eb; margin: 0; font-size: 32px;">🌾 SIMULADOR DE COSTOS</h1>
+                    <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">Argreen S.A. - Simulación de Exportación</p>
+                    <p style="color: #999; margin: 5px 0 0 0; font-size: 12px;">Generado: ${fecha}</p>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #333; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">📋 DATOS GENERALES</h2>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="background-color: #f8fafc;">
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Producto:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${producto}</td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>TN:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${tn}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Contenedor:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${contenedor}</td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;"><strong>Depósito:</strong></td>
+                            <td style="padding: 10px; border: 1px solid #e2e8f0;">${deposito}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #333; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">💰 ANÁLISIS FINANCIERO</h2>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="background-color: #f8fafc;">
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">Precio Venta (USD/TN)</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #2563eb;">USD ${precioVentaTN.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">Costo Total (USD/TN)</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #666;">USD ${costoTotalTN.toFixed(2)}</td>
+                        </tr>
+                        <tr style="background-color: #f0fdf4; border: 2px solid #10b981;">
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold; color: #10b981;">Margen (USD/TN)</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #10b981; font-size: 16px;">USD ${margenTN.toFixed(2)}</td>
+                        </tr>
+                        <tr style="background-color: #f0fdf4; border: 2px solid #10b981;">
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold; color: #10b981;">Profit (%)</td>
+                            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #10b981; font-size: 16px;">${profitPct}%</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #999; font-size: 12px;">
+                    <p>Este documento fue generado automáticamente por el Simulador de Costos de Argreen S.A.</p>
+                    <p>Confidencial - Uso interno</p>
+                </div>
+            `;
+
+            const opt = {
+                margin: 10,
+                filename: `Simulador_${producto}_${tn}TN_${fecha.replace(/\//g, '-')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+
+            html2pdf().set(opt).from(elemento).save();
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('producto').value = 'Cranberry';
+            document.getElementById('tn').value = '24';
+            document.getElementById('peso_bolsa').value = '25';
+            document.getElementById('precio_venta').value = '980';
+            document.getElementById('precio_compra').value = '670';
+            document.getElementById('tc').value = '1516';
+            document.getElementById('contenedor').value = "40'";
+            document.getElementById('deposito').value = 'CENSER';
+            calcular();
+        }
+
+        // Inicializar cálculos al cargar
+        mostrarFormuarioTarifas();
+        calcular();
+    </script>
+</body>
+</html>
