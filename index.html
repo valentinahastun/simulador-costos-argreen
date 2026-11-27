@@ -27,7 +27,7 @@ header{background:var(--navy);color:#fff}
 nav{display:flex;gap:4px;overflow-x:auto}
 nav button{background:none;border:0;color:#cfdbea;font:600 15px Figtree,sans-serif;padding:10px 14px;border-radius:8px;cursor:pointer;min-height:44px;white-space:nowrap}
 nav button[aria-current=true]{background:#fff;color:var(--navy)}
-main{max-width:1320px;margin:auto;padding:20px max(3vw,14px) 90px}
+main{max-width:1320px;margin:auto;padding:20px max(3vw,14px) 40px}
 .v{display:none}.v.on{display:block}
 .grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
@@ -39,7 +39,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute
 input,select,textarea{font:16px Figtree,sans-serif;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-height:44px;width:100%}
 textarea{min-height:70px;resize:vertical}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--greenb);outline-offset:1px}
-input[type=number]{text-align:right;font-variant-numeric:tabular-nums}
+input[inputmode=decimal]{text-align:right;font-variant-numeric:tabular-nums}
 .chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-weight:500;min-height:44px}
 .chk input{width:20px;height:20px;min-height:0;accent-color:var(--navy)}
 .btn{font:600 15px Figtree,sans-serif;border-radius:9px;padding:10px 16px;min-height:44px;cursor:pointer;border:1px solid var(--navy);background:var(--navy);color:#fff}
@@ -86,8 +86,8 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 .dlg{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
 .dlg.on{display:flex}.dlg>div{background:var(--card);border-radius:12px;padding:20px;max-width:420px}
 @media(max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}.res{position:static}
- .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--navy);color:#fff;padding:10px 16px;justify-content:space-between;gap:10px;z-index:5;font-variant-numeric:tabular-nums}
- .mbar b{font-size:18px}}
+ .mbar{display:grid;grid-template-columns:1.3fr 1fr 1fr;position:sticky;top:0;background:var(--navy);color:#fff;padding:8px 16px 10px;gap:10px;z-index:6;font-variant-numeric:tabular-nums;border-top:1px solid #ffffff22;box-shadow:0 4px 12px #0003}
+ .mbar span{display:block;font-size:12px;opacity:.8}.mbar b{font-size:20px;white-space:nowrap}.mbar div:first-child b{font-size:26px;color:#7fe0b0}.mbar b.neg{color:#ffb0b0!important}}
 @media(max-width:600px){.top h1{display:none}.ln{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px}.ln .c{grid-column:1/-1}.ln .m{grid-column:span 1}
  table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px}.stack td{display:flow-root;border:0;padding:2px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute)}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -96,6 +96,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 <body>
 <header><div class="top"><img id="logo" alt="Argreen"><h1>Simulador de costos y cotizaciones</h1><span id="who" style="font-size:13px;opacity:.85;white-space:nowrap"></span>
 <nav id="nav"><button data-v="simular" aria-current="true">Simular</button><button data-v="cotizar">Cotizar</button><button data-v="historial">Historial</button><button data-v="tarifas">Tarifas</button></nav></div></header>
+<div class="mbar"><div><span>Margen USD/TN</span><b id="mM"></b></div><div><span>Profit USD</span><b id="mP"></b></div><div><span>Margen s/ venta</span><b id="mPct"></b></div></div>
 <main>
 <!-- SIMULAR -->
 <section class="v on" id="v-simular">
@@ -109,32 +110,32 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 <div>
  <div class="card"><h2>Producto y venta</h2><div class="body f">
   <label>Producto<select data-k="producto" id="selProd"></select></label>
-  <label>TN a exportar<input type="number" step="any" data-k="tn"></label>
-  <label>Precio de venta USD/TN<input type="number" step="any" data-k="precio"></label>
-  <label>Peso bolsa (kg)<input type="number" step="any" data-k="pesoBolsa"></label>
-  <label>TC oficial ARS/USD<input type="number" step="any" data-k="fx"></label>
-  <label>TC billete (blue)<input type="number" step="any" data-k="fxBlue"></label>
-  <label>Del precio, cobrado en billete USD/TN<input type="number" step="any" data-k="cobroBillete"></label>
+  <label>TN a exportar<input type="text" inputmode="decimal" autocomplete="off" data-k="tn"></label>
+  <label>Precio de venta USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="precio"></label>
+  <label>Peso bolsa (kg)<input type="text" inputmode="decimal" autocomplete="off" data-k="pesoBolsa"></label>
+  <label>TC oficial ARS/USD<input type="text" inputmode="decimal" autocomplete="off" data-k="fx"></label>
+  <label>TC billete (blue)<input type="text" inputmode="decimal" autocomplete="off" data-k="fxBlue"></label>
+  <label>Del precio, cobrado en billete USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="cobroBillete"></label>
  </div></div>
  <div class="card"><h2>Mercadería</h2><div class="body">
   <div class="f"><label style="grid-column:1/-1;max-width:420px">Tipo<select data-k="merc.tipo"><option value="procesada">Procesada (precio de compra)</option><option value="natural">Natural (proceso en planta)</option></select></label></div>
   <div class="f" id="mProc" style="margin-top:12px">
-   <label>Precio de compra<input type="number" step="any" data-k="merc.precio"></label>
+   <label>Precio de compra<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.precio"></label>
    <label>Moneda<select data-k="merc.moneda"><option>USD</option><option>ARS</option></select></label>
    <label>Unidad de precio<select data-k="merc.unidad"><option value="tn">por TN</option><option value="bolsa">por bolsa</option></select></label>
-   <label>Kg bolsa de compra<input type="number" step="any" data-k="merc.kgBolsa"></label>
-   <label>IVA incluido %<input type="number" step="any" data-k="merc.iva"></label>
-   <label>Monto por afuera (billete) USD/TN<input type="number" step="any" data-k="merc.afuera"></label>
+   <label>Kg bolsa de compra<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.kgBolsa"></label>
+   <label>IVA incluido %<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.iva"></label>
+   <label>Monto por afuera (billete) USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.afuera"></label>
   </div>
   <div class="f" id="mNat" style="margin-top:12px">
-   <label>Compra natural USD/TN<input type="number" step="any" data-k="merc.compra"></label>
-   <label>Flete campo → planta USD/TN<input type="number" step="any" data-k="merc.fleteCampo"></label>
+   <label>Compra natural USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.compra"></label>
+   <label>Flete campo → planta USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.fleteCampo"></label>
    <label>Planta<select data-k="merc.planta" id="selPlanta"></select></label>
    <label>Tarifa de la planta<select data-k="merc.grano"><option value="0">Cualquier grano</option><option value="1">Alubia / garbanzo</option></select></label>
-   <label>Proceso USD/TN<input type="number" step="any" data-k="merc.proceso"></label>
-   <label>Bolsas USD/TN<input type="number" step="any" data-k="merc.bolsasTN"></label>
-   <label>% caída<input type="number" step="any" data-k="merc.caida" placeholder="ej: 8"></label>
-   <label>Venta descarte USD/TN<input type="number" step="any" data-k="merc.descarte"></label>
+   <label>Proceso USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.proceso"></label>
+   <label>Bolsas USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.bolsasTN"></label>
+   <label>% caída<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.caida" placeholder="ej: 8"></label>
+   <label>Venta descarte USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-k="merc.descarte"></label>
    <p class="note" id="natTotal" style="grid-column:1/-1;margin:0"></p>
   </div>
  </div></div>
@@ -144,7 +145,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
   <p class="gt">Contenedor y servicios</p>
   <div class="f">
    <label>Unidad<select data-k="unidad"><option value="c20">Contenedor 20'</option><option value="c40">Contenedor 40'</option><option value="camion">Camión</option></select></label>
-   <label>TN por unidad<input type="number" step="any" data-k="tnUnidad"></label>
+   <label>TN por unidad<input type="text" inputmode="decimal" autocomplete="off" data-k="tnUnidad"></label>
    <label>Depósito fiscal<select data-k="deposito"><option>CENSER</option><option>SAN MARTIN</option><option>DEFIBE</option></select></label>
    <label>Surveyor peso + calidad<select data-k="surveyor"><option>ISB</option><option>OPERAGRO</option><option>BIOFIX</option><option>Ninguno</option></select></label>
    <label>Proveedor fumigación<select data-k="provFum"><option>ISB</option><option>BIOFIX</option><option>OPERAGRO</option></select></label>
@@ -177,7 +178,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
   <div class="stack-bar" id="rBar"></div><div class="leg" id="rLeg"></div>
  </div>
  <div class="card"><h2>Precio objetivo</h2><div class="body">
-  <div class="f"><label>Margen buscado<input type="number" step="any" id="objV" value="50"></label>
+  <div class="f"><label>Margen buscado<input type="text" inputmode="decimal" autocomplete="off" id="objV" value="50"></label>
   <label>Expresado en<select id="objT"><option value="usd">USD por TN</option><option value="pct">% sobre venta</option></select></label></div>
   <p style="margin:10px 0 6px">Precio necesario: <b id="objR" class="num"></b> USD/TN <span class="note" id="objE"></span></p>
   <button class="btn o" id="objUsar">Usar este precio</button>
@@ -196,13 +197,13 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
   <label>País / ciudad<input data-q="pais"></label>
   <label>N° de cotización<input data-q="numero"></label>
   <label>Fecha<input type="date" data-q="fecha"></label>
-  <label>Validez (días)<input type="number" data-q="validez"></label>
+  <label>Validez (días)<input type="text" inputmode="decimal" autocomplete="off" data-q="validez"></label>
   <label>Idioma del PDF<select data-q="idioma"><option value="es">Español</option><option value="en">English</option></select></label>
   <p class="note" id="qHint" style="grid-column:1/-1;margin:0"></p>
   <div class="row" style="grid-column:1/-1"><span class="note" id="vEstado"></span><button class="btn x" id="bVentas" hidden>Actualizar desde VENTAS</button></div>
  </div></div>
  <div class="card"><h2>Oferta</h2><div class="body f">
-  <label>Precio USD/TN<input type="number" step="any" data-q="precio"></label>
+  <label>Precio USD/TN<input type="text" inputmode="decimal" autocomplete="off" data-q="precio"></label>
   <label>Incoterm<select data-q="incoterm"><option>FOB</option><option>CFR</option><option>CIF</option><option>FCA</option><option>CPT</option><option>DAP</option></select></label>
   <label>Puerto de carga<input data-q="puertoCarga"></label>
   <label>Destino<input data-q="destino" list="dlDestinos" autocomplete="off"></label>
@@ -246,7 +247,6 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 <div class="card"><h2>Posiciones NCM</h2><div class="scroll"><table class="tar" id="tNcm"></table></div></div>
 </section>
 </main>
-<div class="mbar"><span>Margen <b id="mM"></b>/TN</span><span>Profit <b id="mP"></b></span></div>
 <datalist id="dlClientes"></datalist><datalist id="dlDestinos"></datalist><datalist id="dlPagos"></datalist>
 <div class="toast" id="toast"></div>
 <div class="dlg" id="dlg"><div><p id="dlgT"></p><div class="row"><button class="btn" id="dlgOk">Eliminar</button><button class="btn o" id="dlgNo">Cancelar</button></div></div></div>
@@ -646,6 +646,7 @@ if (typeof module !== 'undefined') module.exports = { construirPDF, CATALOGO, TX
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
+const num = v => { const n = parseFloat(String(v ?? '').trim().replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
 const f0 = n => fmt(n, 0), f2 = n => fmt(n, 2);
 const COLS = ['#28466e', '#7d93b2', '#56bd8b', '#c9a24a', '#b5727a'];
 const hoyISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
@@ -718,7 +719,7 @@ function cargarFormSim() {
 }
 function renderOvr() {
   const items = [['consolidacion', 'Consolidación'], ['precinto', 'Precintado'], ['paquete', 'Paquete ISB'], ['surveyor', 'Surveyor'], ['fumigacion', 'Fumigación'], ['forrado', 'Forrado'], ['manta', 'Manta gel'], ['terminal', 'Terminal']];
-  $('#ovr').innerHTML = items.map(([k, n]) => `<label>${n}<input type="number" step="any" data-o="${k}" value="${esc(S.overrides?.[k] ?? '')}" placeholder="tabla"></label>`).join('');
+  $('#ovr').innerHTML = items.map(([k, n]) => `<label>${n}<input type="text" inputmode="decimal" autocomplete="off" data-o="${k}" value="${esc(S.overrides?.[k] ?? '')}" placeholder="tabla"></label>`).join('');
 }
 const RAPIDOS = [['Flete marítimo', l => l.flete], ['Flete planta → Bs As', l => /flete (planta|del campo|interno)/i.test(l.concepto)],
   ['Gastos locales marítima', l => /gastos locales/i.test(l.concepto)], ['Gastos BL', l => /\bBL\b/.test(l.concepto)]];
@@ -726,7 +727,7 @@ function renderRapidos() {
   const usados = new Set();
   $('#rapidos').innerHTML = RAPIDOS.map(([n, f]) => { const l = S.lineas.find(x => f(x) && !usados.has(x.id)); if (!l) return ''; usados.add(l.id);
     const u = (l.moneda === 'USDb' ? 'USD billete' : l.moneda) + ' ' + BASES[l.base];
-    return `<label>${esc(n)} <span style="font-weight:500">(${esc(u)})</span><input type="number" step="any" data-ql="${l.id}" value="${esc(l.valor)}"></label>`; }).join('');
+    return `<label>${esc(n)} <span style="font-weight:500">(${esc(u)})</span><input type="text" inputmode="decimal" autocomplete="off" data-ql="${l.id}" value="${esc(l.valor)}"></label>`; }).join('');
 }
 function syncRapidos() { $$('[data-ql]').forEach(el => { if (el !== document.activeElement) { const l = S.lineas.find(x => x.id === el.dataset.ql); if (l) el.value = l.valor; } }); }
 function renderLineas() {
@@ -738,7 +739,7 @@ function renderLineas() {
     S.lineas.filter(l => l.grupo === g).forEach(l => {
       h += `<div class="ln" data-id="${l.id}">
         <input class="c" data-l="concepto" value="${esc(l.concepto)}" aria-label="Concepto">
-        <input type="number" step="any" data-l="valor" value="${esc(l.valor)}" aria-label="Valor">
+        <input type="text" inputmode="decimal" autocomplete="off" data-l="valor" value="${esc(l.valor)}" aria-label="Valor">
         <select class="m" data-l="moneda" aria-label="Moneda">${opt([['USD', 'USD'], ['ARS', 'ARS'], ['USDb', 'USD billete']], l.moneda)}</select>
         <select data-l="base" aria-label="Base">${opt(bases, l.base)}</select>
         <button class="btn x" data-del="${l.id}" aria-label="Quitar ${esc(l.concepto)}">✕</button>
@@ -762,7 +763,8 @@ function calc() {
   $('#rFact').textContent = 'USD ' + f0(R.facturado);
   $('#rFob').textContent = f2(R.costoFOB);
   $('#rFobbing').textContent = f2(R.fobbing);
-  $('#mM').textContent = f2(R.margenTN); $('#mP').textContent = 'USD ' + f0(R.profit);
+  $('#mM').textContent = f2(R.margenTN); $('#mP').textContent = f0(R.profit); $('#mPct').textContent = f2(R.margenPct) + '%';
+  ['#mM', '#mP'].forEach(s => $(s).classList.toggle('neg', neg));
   const u = S.unidad === 'camion' ? ['camión', 'camiones'] : ['contenedor', 'contenedores'];
   $('#uInfo').textContent = `${R.unidades} ${u[R.unidades > 1 ? 1 : 0]} · ${f0(R.bolsas)} bolsas`;
   $('#dUnid').textContent = `${f2(S.tn)} TN · ${R.unidades} unidad(es) · TC ${f2(S.fx)}`;
@@ -782,7 +784,7 @@ function calc() {
   calcObjetivo(); renderCotizar(); guardarBorrador();
 }
 function calcObjetivo() {
-  const p = precioObjetivo(S, T, +$('#objV').value || 0, $('#objT').value);
+  const p = precioObjetivo(S, T, num($('#objV').value), $('#objT').value);
   $('#objR').textContent = isFinite(p) ? f2(p) : '-';
   $('#objE').textContent = isFinite(p) ? `(${p >= S.precio ? '+' : ''}${f2(p - S.precio)} vs. actual)` : '';
   return p;
@@ -793,9 +795,9 @@ function prodCat() { return CATALOGO[S.producto] || {}; }
 function cargarFormQ() { $$('[data-q]').forEach(el => { const v = Q[el.dataset.q]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; }); }
 function renderCotizar() {
   if (!R) return;
-  const r2 = calcular(S, T, +Q.precio || 0);
-  $('#qTotal').textContent = 'USD ' + f2((+Q.precio || 0) * S.tn);
-  $('#qResumen').textContent = `${S.producto} · ${f2(S.tn)} TN × ${f2(+Q.precio || 0)} USD/TN · ${Q.incoterm} ${Q.incoterm === 'FOB' ? Q.puertoCarga : Q.destino}`;
+  const r2 = calcular(S, T, num(Q.precio) || 0);
+  $('#qTotal').textContent = 'USD ' + f2((num(Q.precio) || 0) * S.tn);
+  $('#qResumen').textContent = `${S.producto} · ${f2(S.tn)} TN × ${f2(num(Q.precio) || 0)} USD/TN · ${Q.incoterm} ${Q.incoterm === 'FOB' ? Q.puertoCarga : Q.destino}`;
   $('#qMargen').textContent = f2(r2.margenTN) + ' USD/TN'; $('#qMargen').classList.toggle('neg', r2.margenTN < 0);
   $('#qProfit').textContent = 'USD ' + f0(r2.profit); $('#qProfit').classList.toggle('neg', r2.profit < 0);
 }
@@ -828,9 +830,9 @@ async function nuevoNumero() {
 }
 async function nuevoNumeroLocal() { ajustes.contador = (ajustes.contador || 0) + 1; await Store.set('ajustes', ajustes); return `ARG-${new Date().getFullYear() % 100}-${String(ajustes.contador).padStart(4, '0')}`; }
 function datosPDF() {
-  const fecha = Q.fecha || hoyISO(); const d = new Date(fecha + 'T12:00'); d.setDate(d.getDate() + (+Q.validez || 0));
-  return { ...Q, producto: S.producto, tn: S.tn, unidades: R.unidades, unidad: S.unidad, precio: +Q.precio || 0,
-    fechaTxt: fechaTxt(fecha), validaTxt: fechaTxt(d.toISOString().slice(0, 10)), validez: +Q.validez || 0 };
+  const fecha = Q.fecha || hoyISO(); const d = new Date(fecha + 'T12:00'); d.setDate(d.getDate() + (num(Q.validez) || 0));
+  return { ...Q, producto: S.producto, tn: S.tn, unidades: R.unidades, unidad: S.unidad, precio: num(Q.precio) || 0,
+    fechaTxt: fechaTxt(fecha), validaTxt: fechaTxt(d.toISOString().slice(0, 10)), validez: num(Q.validez) || 0 };
 }
 async function descargarPDF() {
   const msg = $('#pdfMsg'); msg.textContent = '';
@@ -980,7 +982,7 @@ function abrir(id, duplicar) {
 let Td = null, tMeta = null, puedeEditar = true, USER = null;
 function renderTarifas() {
   const V = Td || T, ro = puedeEditar ? '' : ' disabled';
-  const n = (path, v) => `<input type="number" step="any" data-t="${path}" value="${esc(v)}"${ro}>`;
+  const n = (path, v) => `<input type="text" inputmode="decimal" autocomplete="off" data-t="${path}" value="${esc(v)}"${ro}>`;
   $('#tDep').innerHTML = '<thead><tr><th>Depósito</th><th>Moneda</th><th class="num">Consolidación 20\'</th><th class="num">Consolidación 40\'</th><th class="num">Camión</th><th class="num">Precintado ARS/u</th></tr></thead><tbody>' +
     Object.entries(V.deposito).map(([k, d]) => `<tr><td>${esc(k)}</td><td><select data-t="deposito.${k}.moneda"${ro}><option${d.moneda === 'USD' ? ' selected' : ''}>USD</option><option${d.moneda === 'ARS' ? ' selected' : ''}>ARS</option></select></td>
       <td>${n(`deposito.${k}.c20`, d.c20)}</td><td>${n(`deposito.${k}.c40`, d.c40)}</td><td>${n(`deposito.${k}.camion`, d.camion)}</td><td>${n(`deposito.${k}.precinto`, d.precinto)}</td></tr>`).join('') + '</tbody>';
@@ -1017,7 +1019,7 @@ function ir(v) {
   $$('.v').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
   $$('#nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === v));
   try { if (!GAS && location.hash !== '#' + v) history.replaceState(null, '', '#' + v); } catch (e) {}
-  $('.mbar').style.visibility = v === 'simular' ? '' : 'hidden';
+  $('.mbar').style.display = v === 'simular' ? '' : 'none';
   if (v === 'historial') cargarHist();
 }
 
@@ -1027,19 +1029,19 @@ $('#nav').addEventListener('click', e => { const b = e.target.closest('button');
 window.addEventListener('hashchange', () => ir(location.hash.slice(1) || 'simular'));
 document.addEventListener('input', e => {
   const el = e.target;
-  if (el.dataset.k) { const v = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? (el.value === '' ? 0 : +el.value) : el.value);
+  if (el.dataset.k) { const v = el.type === 'checkbox' ? el.checked : (el.inputMode === 'decimal' ? num(el.value) : el.value);
     setP(S, el.dataset.k, el.dataset.k === 'merc.grano' ? +v : v);
     if (el.dataset.k === 'merc.planta' || el.dataset.k === 'merc.grano') { const pl = T.plantas[S.merc.planta] || [0, 0]; S.merc.proceso = pl[S.merc.grano ? 1 : 0] || 0; $('[data-k="merc.proceso"]').value = S.merc.proceso; }
     if (el.dataset.k === 'producto') { sincronizarQDesdeSim(false); pistaCliente(); }
     if (el.dataset.k === 'unidad') { S.tnUnidad = S.unidad === 'camion' ? 27.5 : 24; $('[data-k=tnUnidad]').value = S.tnUnidad; }
     if (el.dataset.k === 'precio') { Q.precio = S.precio; cargarFormQ(); }
     calc(); }
-  else if (el.dataset.o) { S.overrides = S.overrides || {}; if (el.value === '') delete S.overrides[el.dataset.o]; else S.overrides[el.dataset.o] = +el.value; calc(); }
-  else if (el.dataset.ql) { const l = S.lineas.find(x => x.id === el.dataset.ql); if (l) { l.valor = +el.value; const li = $(`.ln[data-id="${l.id}"] [data-l=valor]`); if (li) li.value = el.value; } calc(); }
-  else if (el.dataset.l) { const l = S.lineas.find(x => x.id === el.closest('.ln').dataset.id); l[el.dataset.l] = el.dataset.l === 'valor' ? +el.value : el.value;
+  else if (el.dataset.o) { S.overrides = S.overrides || {}; if (el.value === '') delete S.overrides[el.dataset.o]; else S.overrides[el.dataset.o] = num(el.value); calc(); }
+  else if (el.dataset.ql) { const l = S.lineas.find(x => x.id === el.dataset.ql); if (l) { l.valor = num(el.value); const li = $(`.ln[data-id="${l.id}"] [data-l=valor]`); if (li) li.value = el.value; } calc(); }
+  else if (el.dataset.l) { const l = S.lineas.find(x => x.id === el.closest('.ln').dataset.id); l[el.dataset.l] = el.dataset.l === 'valor' ? num(el.value) : el.value;
     syncRapidos(); if (el.dataset.l !== 'valor') renderRapidos(); calc(); }
   else if (el.dataset.q) { Q[el.dataset.q] = el.type === 'checkbox' ? el.checked : el.value; if (el.dataset.q === 'cliente') autocompletarCliente(); renderCotizar(); guardarBorrador(); }
-  else if (el.dataset.t) { const ks = el.dataset.t.split('.'); const last = ks.pop(); if (!puedeEditar) return; Td ??= clone(T); const o = ks.reduce((a, k) => a[k] ??= (isNaN(+last) ? {} : [0, 0]), Td); o[last] = el.tagName === 'SELECT' ? el.value : +el.value; estadoTarifas(); }
+  else if (el.dataset.t) { const ks = el.dataset.t.split('.'); const last = ks.pop(); if (!puedeEditar) return; Td ??= clone(T); const o = ks.reduce((a, k) => a[k] ??= (isNaN(+last) ? {} : [0, 0]), Td); o[last] = el.tagName === 'SELECT' ? el.value : num(el.value); estadoTarifas(); }
   else if (el.dataset.tn2) { if (!puedeEditar) return; Td ??= clone(T); Td.ncm[el.dataset.tn2] = el.value; estadoTarifas(); }
   else if (el.id === 'objV' || el.id === 'objT') calcObjetivo();
   else if (el.id === 'hBuscar') renderHist();
