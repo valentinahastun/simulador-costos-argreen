@@ -91,7 +91,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 </style>
 </head>
 <body>
-<header><div class="top"><img id="logo" alt="Argreen"><h1>Simulador de costos y cotizaciones</h1>
+<header><div class="top"><img id="logo" alt="Argreen"><h1>Simulador de costos y cotizaciones</h1><span id="who" style="font-size:13px;opacity:.85;white-space:nowrap"></span>
 <nav id="nav"><button data-v="simular" aria-current="true">Simular</button><button data-v="cotizar">Cotizar</button><button data-v="historial">Historial</button><button data-v="tarifas">Tarifas</button></nav></div></header>
 <main>
 <!-- SIMULAR -->
@@ -628,8 +628,10 @@ let ajustes = { contador: 0 };
 let R = null;
 
 /* ---------- Persistencia: base de Claude si está, si no el navegador ---------- */
+const GAS = !!(window.google && google.script && google.script.run);
+const gas = (fn, ...args) => new Promise((ok, mal) => google.script.run.withSuccessHandler(ok).withFailureHandler(e => mal({ code: 'gas', message: e?.message || String(e) }))[fn](...args));
 const Store = {
-  db: null, uid: null,
+  db: null, uid: null, gas: GAS,
   lsGet(k, d) { try { const v = localStorage.getItem('argreen.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   lsSet(k, v) { try { localStorage.setItem('argreen.' + k, JSON.stringify(v)); } catch (e) {} },
   ref(k) { return this.db.doc(`data/users/${this.uid}/${k}`); },
@@ -639,6 +641,10 @@ const Store = {
   },
   async set(k, v) { this.lsSet(k, v); if (this.db) { try { await this.ref(k).set(v); } catch (e) { toast('No se pudo sincronizar, quedó guardado en este equipo'); } } },
   async setTarifas(t) {
+    if (this.gas) {
+      try { tMeta = await gas('guardarTarifas', JSON.stringify(t)); this.lsSet('tarifas', t); return true; }
+      catch (e) { toast(e.message || 'No se pudo guardar. Probá de nuevo.'); return false; }
+    }
     const meta = { at: new Date().toISOString(), by: this.uid || null };
     if (this.db) {
       try { await this.db.doc('config/tarifas').set({ ...clone(t), _meta: meta }); }
@@ -647,14 +653,17 @@ const Store = {
     this.lsSet('tarifas', t); this.lsSet('tarifasMeta', meta); tMeta = meta; return true;
   },
   async lista() {
+    if (this.gas) { try { return await gas('listarHistorial'); } catch (e) { toast('No se pudo leer el historial'); return []; } }
     if (this.db) { try { const q = await this.db.collection(`data/users/${this.uid}`).get(); return q.docs.filter(d => d.id.startsWith('sim_')).map(d => ({ id: d.id, ...d.data() })); } catch (e) {} }
     return this.lsGet('historial', []);
   },
   async guardarSim(item) {
+    if (this.gas) { try { await gas('guardarSim', JSON.stringify(item)); return; } catch (e) { toast(e.message || 'No se pudo guardar'); throw e; } }
     if (this.db) { try { await this.ref(item.id).set(item); return; } catch (e) {} }
     const h = this.lsGet('historial', []).filter(x => x.id !== item.id); h.unshift(item); this.lsSet('historial', h.slice(0, 300));
   },
   async borrar(id) {
+    if (this.gas) { try { await gas('borrarSim', id); } catch (e) { toast(e.message || 'No se pudo eliminar'); } return; }
     if (this.db) { try { await this.ref(id).delete(); return; } catch (e) {} }
     this.lsSet('historial', this.lsGet('historial', []).filter(x => x.id !== id));
   }
@@ -752,6 +761,7 @@ function sincronizarQDesdeSim(forzar) {
   cargarFormQ(); renderCotizar();
 }
 async function nuevoNumero() {
+  if (GAS) return gas('nuevoNumero');
   const yy = new Date().getFullYear() % 100;
   if (Store.db) {
     const ref = Store.db.doc('numeracion/cotizaciones');
@@ -789,8 +799,9 @@ async function descargarPDF() {
     try { await dl.save({ filename: nombre, data: blob }); msg.textContent = 'Listo, PDF descargado.'; }
     catch (e) { msg.textContent = e.code === 'declined' ? 'Descarga cancelada.' : e.code === 'host_unavailable' ? 'Esta app no puede guardar archivos aquí: abrí la página en el navegador.' : 'No se pudo descargar (' + e.code + ').'; return; }
   } else {
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); msg.textContent = 'Listo, PDF descargado.';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+    msg.innerHTML = 'Listo, PDF descargado. Si no se bajó, <a href="' + url + '" target="_blank" rel="noopener">abrilo acá</a>.';
   }
   await guardar(true);
 }
@@ -856,6 +867,14 @@ function autocompletarCliente() {
 }
 async function cargarVentas(forzar) {
   if (cargandoV) return;
+  if (GAS) {
+    cargandoV = true; $('#bVentas').hidden = false; $('#bVentas').disabled = true;
+    if (!VENTAS || forzar) $('#vEstado').textContent = 'Leyendo la solapa VENTAS…';
+    try { VENTAS = await gas('ventas', !!forzar); Store.lsSet('ventas', VENTAS); renderDatalists(); }
+    catch (e) { $('#vEstado').textContent = 'No se pudo leer VENTAS: ' + (e.message || '') + (VENTAS ? ' Uso la última copia.' : ''); }
+    finally { cargandoV = false; $('#bVentas').disabled = false; }
+    return;
+  }
   const mcp = window.claude?.use ? await window.claude.use('mcp').catch(() => null) : null;
   if (!mcp) { $('#vEstado').textContent = VENTAS ? $('#vEstado').textContent : ''; return; }
   $('#bVentas').hidden = false; cargandoV = true; $('#bVentas').disabled = true;
@@ -881,7 +900,7 @@ async function cargarVentas(forzar) {
 }
 
 /* ---------- Historial ---------- */
-let HIST = [], actualId = null;
+let HIST = [], actualId = null, MIEMAIL = '';
 async function guardar(silencioso) {
   if (!actualId) actualId = 'sim_' + Date.now();
   const item = { id: actualId, fecha: new Date().toISOString(), S: clone(S), Q: clone(Q),
@@ -899,7 +918,7 @@ function renderHist() {
   const xs = HIST.filter(h => JSON.stringify(h.resumen || {}).toLowerCase().includes(q));
   $('#hVacio').textContent = xs.length ? '' : (HIST.length ? 'Nada coincide con la búsqueda.' : 'Todavía no guardaste simulaciones. Usá "Guardar simulación" o descargá un PDF y aparecen acá.');
   $('#tHist').innerHTML = xs.length ? '<thead><tr><th>Fecha</th><th>N°</th><th>Cliente</th><th>Producto</th><th class="num">TN</th><th class="num">Precio</th><th class="num">Margen/TN</th><th class="num">Profit</th><th></th></tr></thead><tbody>' +
-    xs.map(h => { const r = h.resumen || {}; return `<tr><td>${esc(new Date(h.fecha).toLocaleDateString('es-AR'))}</td><td>${esc(r.numero || '-')}</td><td>${esc(r.cliente || '-')}</td><td>${esc(r.producto)}</td>
+    xs.map(h => { const r = h.resumen || {}; return `<tr><td>${esc(new Date(h.fecha).toLocaleDateString('es-AR'))}</td><td>${esc(r.numero || '-')}</td><td>${esc(r.cliente || '-')}${h.usuario && h.usuario !== MIEMAIL ? '<small>' + esc(h.usuario) + '</small>' : ''}</td><td>${esc(r.producto)}</td>
       <td class="num">${f2(+r.tn)}</td><td class="num">${f2(+r.precio)}</td><td class="num${r.margenTN < 0 ? ' neg' : ''}">${f2(+r.margenTN)}</td><td class="num">${f0(+r.profit)}</td>
       <td><div class="row"><button class="btn o" data-abrir="${esc(h.id)}">Abrir</button><button class="btn x" data-copiar="${esc(h.id)}">Duplicar</button><button class="btn x" data-borrar="${esc(h.id)}">Eliminar</button></div></td></tr>`; }).join('') + '</tbody>' : '';
   $('#hStore').textContent = Store.db ? 'sincronizado entre tus dispositivos' : 'guardado en este navegador';
@@ -940,7 +959,7 @@ async function estadoTarifas() {
   if (!puedeEditar) { el.textContent = 'Solo lectura: las tarifas las modifican los editores.'; return; }
   if (Td) { el.textContent = 'Tenés cambios sin guardar. Las simulaciones siguen usando las tarifas guardadas.'; return; }
   if (!tMeta?.at) { el.textContent = Store.db ? 'Tarifas compartidas con el equipo.' : 'Tarifas guardadas en este navegador.'; return; }
-  let quien = '';
+  let quien = tMeta.nombre || (GAS ? tMeta.by : '') || '';
   if (USER && tMeta.by) { try { const ps = await USER.profiles([tMeta.by]); quien = ps?.[tMeta.by]?.name || ''; } catch (e) {} }
   el.textContent = `Última modificación: ${new Date(tMeta.at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}${quien ? ' por ' + quien : ''}`;
 }
@@ -951,7 +970,7 @@ function ir(v) {
   if (Td && v !== 'tarifas' && $('#v-tarifas').classList.contains('on')) toast('Ojo: dejaste cambios de tarifas sin guardar');
   $$('.v').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
   $$('#nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === v));
-  if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
+  try { if (!GAS && location.hash !== '#' + v) history.replaceState(null, '', '#' + v); } catch (e) {}
   $('.mbar').style.visibility = v === 'simular' ? '' : 'hidden';
   if (v === 'historial') cargarHist();
 }
@@ -1017,7 +1036,16 @@ async function iniciar() {
   const bor = Store.lsGet('borrador', null); if (bor?.S?.lineas) { S = bor.S; Q = { ...Q, ...bor.Q }; }
   ajustes = Store.lsGet('ajustes', ajustes); VENTAS = Store.lsGet('ventas', null);
   renderTarifas(); cargarFormSim(); sincronizarQDesdeSim(!bor); cargarFormQ(); ir(location.hash.slice(1) || 'simular');
-  if (window.claude?.use) {
+  if (GAS) {
+    try {
+      const r = await gas('init');
+      if (!r.rol) { document.body.innerHTML = '<main style="max-width:560px;margin:15vh auto;padding:20px;font:17px Figtree,sans-serif"><h2>No tenés acceso todavía</h2><p>Entraste como <b>' + esc(r.email || 'usuario sin mail') + '</b>. Pedile a un editor del simulador que te agregue en la planilla de usuarios.</p></main>'; return; }
+      MIEMAIL = r.email; puedeEditar = r.rol === 'editor'; tMeta = r.meta || null;
+      if (r.tarifas) { T = mezclarTarifas(r.tarifas); Store.lsSet('tarifas', T); }
+      $('#who').textContent = (r.nombre || r.email) + ' · ' + (puedeEditar ? 'editor' : 'usuario');
+      renderTarifas(); calc();
+    } catch (e) { toast('No se pudo conectar: ' + (e.message || '')); }
+  } else if (window.claude?.use) {
     try {
       const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
       const uid = user ? await user.id() : null;
