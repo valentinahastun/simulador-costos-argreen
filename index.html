@@ -98,7 +98,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 <section class="v on" id="v-simular">
 <div class="row" style="margin-bottom:14px">
  <label style="flex:1 1 220px">Plantilla
-  <select id="preset"><option value="cortes">Legumbres · Bs As (planilla Cortes)</option><option value="bsas">Legumbres · Puerto Bs As (simulador viejo)</option><option value="chile">Legumbres · Chile</option><option value="azucar">Azúcar · camión</option></select></label>
+  <select id="preset"><option value="bsas">Legumbres · Puerto Bs As</option><option value="chile">Legumbres · Chile</option><option value="azucar">Azúcar · camión</option></select></label>
  <button class="btn o" id="bPreset" style="align-self:flex-end">Cargar plantilla</button>
  <button class="btn" id="bGuardar" style="align-self:flex-end">Guardar simulación</button>
 </div>
@@ -297,36 +297,10 @@ const PRESETS = {
       L(3, 'Comisión broker', 2, 'USD', 'pct'),
       L(3, 'Gastos locales marítima', 620, 'USD', 'op'),
       L(3, 'Flete marítimo', 1600, 'USD', 'unidad', { flete: true }),
-      L(3, 'Gastos BL marítima', 65, 'USD', 'op')
-    ], overrides: {}
-  }),
-  cortes: () => ({
-    nombre: 'Legumbres · Bs As (planilla Cortes)', producto: 'Poroto Dark', tn: 24, pesoBolsa: 25, precio: 1070, fx: 1570, fxBlue: 1690, cobroBillete: 0,
-    unidad: 'c20', tnUnidad: 24, deposito: 'CENSER', surveyor: 'ISB', provFum: 'ISB', fumigacion: 'Fosfuro',
-    mantaGel: false, forrado: true, terminal: true, consolidacion: true, precinto: false,
-    merc: { tipo: 'procesada', precio: 710, moneda: 'USD', unidad: 'tn', kgBolsa: 50, iva: 0, afuera: 0,
-      planta: 'Caballero', grano: 0, compra: 600, fleteCampo: 33, proceso: 65, bolsasTN: 12, caida: 8, descarte: 80 },
-    lineas: [
-      L(1, 'Honorarios despachante', 0.8, 'USD', 'pct'),
-      L(1, 'Gastos operativos', 100, 'USD', 'op'),
-      L(1, 'Movilidad y formulario', 50000, 'ARS', 'op'),
-      L(1, 'CO + Fito', 125000, 'ARS', 'op'),
-      L(1, 'Impresión de etiquetas', 12000, 'ARS', 'unidad'),
-      L(1, 'Etiquetado', 30000, 'ARS', 'unidad'),
-      L(1, 'Envío de documentos', 0, 'ARS', 'op'),
-      L(1, 'Gate', 30, 'USD', 'unidad'),
-      L(1, 'Censer bajada a piso', 0, 'USD', 'unidad'),
-      L(1, 'Gastos financieros', 0, 'USD', 'op'),
-      L(2, 'Flete del campo a Bs As', 95000, 'ARS', 'tn'),
-      L(2, 'Comisión de compra', 10, 'USD', 'tn'),
-      L(2, 'Carta de porte', 0, 'USD', 'tn'),
-      L(3, 'Gastos locales marítima', 580, 'USD', 'op'),
-      L(3, 'Flete marítimo', 1000, 'USD', 'unidad', { flete: true }),
       L(3, 'Gastos BL marítima', 65, 'USD', 'op'),
       L(4, 'Cable', 0, 'USDb', 'pctv'),
-      L(4, 'Comisión trader', 0, 'USDb', 'tn'),
-      L(4, 'Comisión broker', 2, 'USDb', 'pctv')
-    ], overrides: { consolidacion: 830 }
+      L(4, 'Comisión trader', 0, 'USDb', 'tn')
+    ], overrides: {}
   }),
   chile: () => {
     const s = PRESETS.bsas();
