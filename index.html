@@ -195,7 +195,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
  <div class="card"><h2>Cliente</h2><div class="body f">
   <label>Cliente<input data-q="cliente" list="dlClientes" autocomplete="off" placeholder="Razón social"></label>
   <label>País / ciudad<input data-q="pais"></label>
-  <label>N° de cotización<input data-q="numero"></label>
+  <label>N° de cotización<input data-q="numero" placeholder="Se asigna al descargar"></label>
   <label>Fecha<input type="date" data-q="fecha"></label>
   <label>Validez (días)<input type="text" inputmode="decimal" autocomplete="off" data-q="validez"></label>
   <label>Idioma del PDF<select data-q="idioma"><option value="es">Español</option><option value="en">English</option></select></label>
@@ -223,7 +223,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
   <p class="note" id="qResumen"></p>
   <div class="kpis"><div class="kpi"><span class="k">Margen con este precio</span><b id="qMargen"></b></div><div class="kpi"><span class="k">Profit</span><b id="qProfit"></b></div></div>
   <p class="note">El PDF no muestra costos ni márgenes: solo lo que ve el cliente.</p>
-  <div class="row"><button class="btn g" id="bPDF">Descargar PDF</button><button class="btn o" id="bPrecioSim">Traer precio de la simulación</button></div>
+  <div class="row"><button class="btn g" id="bPDF">Descargar PDF</button><button class="btn o" id="bPrecioSim">Traer precio de la simulación</button><button class="btn o" id="bNuevaQ">Nueva cotización</button></div>
   <p class="note" id="pdfMsg"></p>
  </div>
 </aside>
@@ -839,7 +839,10 @@ async function descargarPDF() {
   const msg = $('#pdfMsg'); msg.textContent = '';
   if (!window.jspdf) { msg.textContent = 'No se pudo cargar el generador de PDF. Revisá la conexión y recargá la página.'; return; }
   if (!Q.cliente) { msg.textContent = 'Completá el cliente antes de descargar.'; $('[data-q=cliente]').focus(); return; }
-  if (!Q.numero) { Q.numero = await nuevoNumero(); cargarFormQ(); }
+  const firma = JSON.stringify([Q.cliente, S.producto, num(Q.precio), S.tn, Q.incoterm, Q.destino]);
+  const manual = Q.numero && Q.numero !== Q._numAuto;
+  if (!Q.numero || (!manual && Q._firma !== firma)) { Q.numero = await nuevoNumero(); Q._numAuto = Q.numero; actualId = null; cargarFormQ(); }
+  Q._firma = firma;
   const doc = construirPDF(window.jspdf.jsPDF, datosPDF(), IMG);
   const nombre = `Cotizacion ${Q.numero} ${Q.cliente} ${S.producto}.pdf`.replace(/[\\/:*?"<>|]/g, '');
   const blob = doc.output('blob');
@@ -1065,6 +1068,7 @@ $('#objUsar').onclick = () => { const p = calcObjetivo(); if (isFinite(p)) { S.p
 $('#bPDF').onclick = descargarPDF;
 $('#bVentas').onclick = () => cargarVentas(true);
 $('#bPrecioSim').onclick = () => { Q.precio = S.precio; cargarFormQ(); renderCotizar(); };
+$('#bNuevaQ').onclick = () => { Object.assign(Q, { numero: '', _numAuto: '', _firma: '', cliente: '', pais: '', destino: '', pago: '', obs: '', fecha: hoyISO(), precio: S.precio, _auto: {} }); actualId = null; cargarFormQ(); pistaCliente(); renderCotizar(); guardarBorrador(); toast('Cotización nueva: el número se asigna al descargar'); $('[data-q=cliente]').focus(); };
 $('#bReset').onclick = async () => { if (await pedirConfirmacion('Se cargan los valores de la planilla como borrador. Se aplican recién cuando toques Guardar. ¿Seguir?')) { Td = clone(TARIFAS_BASE); renderTarifas(); } };
 $('#bGuardarT').onclick = async () => {
   if (!Td || !puedeEditar) return; $('#bGuardarT').disabled = true;
