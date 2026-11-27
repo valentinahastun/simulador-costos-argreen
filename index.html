@@ -113,25 +113,6 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
   <label>TC billete (blue)<input type="number" step="any" data-k="fxBlue"></label>
   <label>Del precio, cobrado en billete USD/TN<input type="number" step="any" data-k="cobroBillete"></label>
  </div></div>
- <div class="card"><h2>Logística y servicios <small id="uInfo"></small></h2><div class="body">
-  <div class="f">
-   <label>Unidad<select data-k="unidad"><option value="c20">Contenedor 20'</option><option value="c40">Contenedor 40'</option><option value="camion">Camión</option></select></label>
-   <label>TN por unidad<input type="number" step="any" data-k="tnUnidad"></label>
-   <label>Depósito fiscal<select data-k="deposito"><option>CENSER</option><option>SAN MARTIN</option><option>DEFIBE</option></select></label>
-   <label>Surveyor peso + calidad<select data-k="surveyor"><option>ISB</option><option>OPERAGRO</option><option>BIOFIX</option><option>Ninguno</option></select></label>
-   <label>Proveedor fumigación<select data-k="provFum"><option>ISB</option><option>BIOFIX</option><option>OPERAGRO</option></select></label>
-   <label>Fumigación<select data-k="fumigacion"><option>Fosfuro</option><option>Bromuro</option><option>Ninguno</option></select></label>
-  </div>
-  <div class="row" style="margin-top:6px">
-   <label class="chk"><input type="checkbox" data-k="consolidacion">Consolidación</label>
-   <label class="chk"><input type="checkbox" data-k="precinto">Precintado</label>
-   <label class="chk"><input type="checkbox" data-k="forrado">Forrado</label>
-   <label class="chk"><input type="checkbox" data-k="mantaGel">Manta gel</label>
-   <label class="chk"><input type="checkbox" data-k="terminal">Ingreso a terminal</label>
-  </div>
-  <details><summary>Ajustar tarifas solo para esta operación (USD por unidad)</summary><div class="f" id="ovr"></div>
-   <p class="note">Vacío = usa la tabla de Tarifas. Sirve para una cotización puntual de un proveedor.</p></details>
- </div></div>
  <div class="card"><h2>Mercadería</h2><div class="body">
   <div class="f"><label style="grid-column:1/-1;max-width:420px">Tipo<select data-k="merc.tipo"><option value="procesada">Procesada (precio de compra)</option><option value="natural">Natural (proceso en planta)</option></select></label></div>
   <div class="f" id="mProc" style="margin-top:12px">
@@ -154,6 +135,28 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
    <p class="note" id="natTotal" style="grid-column:1/-1;margin:0"></p>
   </div>
  </div></div>
+ <div class="card"><h2>Logística y servicios <small id="uInfo"></small></h2><div class="body">
+  <p class="gt" style="margin-top:0">Fletes y gastos clave</p>
+  <div class="f" id="rapidos" style="margin-bottom:14px"></div>
+  <p class="gt">Contenedor y servicios</p>
+  <div class="f">
+   <label>Unidad<select data-k="unidad"><option value="c20">Contenedor 20'</option><option value="c40">Contenedor 40'</option><option value="camion">Camión</option></select></label>
+   <label>TN por unidad<input type="number" step="any" data-k="tnUnidad"></label>
+   <label>Depósito fiscal<select data-k="deposito"><option>CENSER</option><option>SAN MARTIN</option><option>DEFIBE</option></select></label>
+   <label>Surveyor peso + calidad<select data-k="surveyor"><option>ISB</option><option>OPERAGRO</option><option>BIOFIX</option><option>Ninguno</option></select></label>
+   <label>Proveedor fumigación<select data-k="provFum"><option>ISB</option><option>BIOFIX</option><option>OPERAGRO</option></select></label>
+   <label>Fumigación<select data-k="fumigacion"><option>Fosfuro</option><option>Bromuro</option><option>Ninguno</option></select></label>
+  </div>
+  <div class="row" style="margin-top:6px">
+   <label class="chk"><input type="checkbox" data-k="consolidacion">Consolidación</label>
+   <label class="chk"><input type="checkbox" data-k="precinto">Precintado</label>
+   <label class="chk"><input type="checkbox" data-k="forrado">Forrado</label>
+   <label class="chk"><input type="checkbox" data-k="mantaGel">Manta gel</label>
+   <label class="chk"><input type="checkbox" data-k="terminal">Ingreso a terminal</label>
+  </div>
+  <details><summary>Ajustar tarifas solo para esta operación (USD por unidad)</summary><div class="f" id="ovr"></div>
+   <p class="note">Vacío = usa la tabla de Tarifas. Sirve para una cotización puntual de un proveedor.</p></details>
+ </div></div>
  <div class="card"><h2>Gastos <small>valor · moneda · base de cálculo</small></h2><div class="body" id="lineas"></div></div>
 </div>
 <aside class="res">
@@ -165,6 +168,8 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
    <div class="kpi"><span class="k">Margen s/ venta</span><b id="rPct"></b></div>
    <div class="kpi"><span class="k">Costo total USD/TN</span><b id="rCosto"></b></div>
    <div class="kpi"><span class="k">Facturación</span><b id="rFact"></b></div>
+   <div class="kpi"><span class="k">Costo FOB (sin flete)</span><b id="rFob"></b></div>
+   <div class="kpi"><span class="k">Fobbing (sin merc. ni flete)</span><b id="rFobbing"></b></div>
   </div>
   <div class="stack-bar" id="rBar"></div><div class="leg" id="rLeg"></div>
  </div>
@@ -376,6 +381,7 @@ function calcular(s, T, precioOverride) {
       porTN = s.overrides[key] * unidades / tn; detalle += ' · ajuste manual ' + fmt(s.overrides[key]) + ' USD/unidad';
     }
     filas.push({ grupo, concepto, detalle, porTN, total: porTN * tn, key });
+    return filas[filas.length - 1];
   };
   const porUnidad = (usd) => usd * unidades / tn;
   const uLabel = s.unidad === 'camion' ? 'camión' : (s.unidad === 'c40' ? "40'" : "20'");
@@ -403,9 +409,9 @@ function calcular(s, T, precioOverride) {
 
   // Mercadería
   if (s.merc.tipo === 'natural') {
-    for (const [n, v, d] of partesNatural(s, T)) if (v || n === 'Compra natural') add(2, n, 'Natural · ' + d, v);
-  } else { const merc = costoMercaderia(s, T); add(2, 'Mercadería', merc.nota, merc.total); }
-  if (+s.merc.afuera) add(2, 'Compra: monto por afuera', `USD ${fmt(+s.merc.afuera)} billete × ${fmt(fBlue, 4)}`, +s.merc.afuera * fBlue);
+    for (const [n, v, d] of partesNatural(s, T)) if (v || n === 'Compra natural') add(2, n, 'Natural · ' + d, v).merc = true;
+  } else { const merc = costoMercaderia(s, T); add(2, 'Mercadería', merc.nota, merc.total).merc = true; }
+  if (+s.merc.afuera) add(2, 'Compra: monto por afuera', `USD ${fmt(+s.merc.afuera)} billete × ${fmt(fBlue, 4)}`, +s.merc.afuera * fBlue).merc = true;
 
   // Líneas manuales
   const fleteTN = s.lineas.filter(l => l.flete).reduce((a, l) => a + lineaTN(l, s, unidades, tn, bolsasTN, 0, precio), 0);
@@ -424,7 +430,8 @@ function calcular(s, T, precioOverride) {
     filas, grupos, unidades, bolsas: Math.round(tn * bolsasTN), precio, costoTN, margenTN, fleteTN,
     costoTotal: costoTN * tn, facturado: precio * tn, profit: margenTN * tn,
     margenPct: precio ? margenTN / precio * 100 : 0, markup: costoTN ? margenTN / costoTN * 100 : 0,
-    fBlue, extraBillete, margenBillete: margenTN / fBlue, profitBillete: margenTN * tn / fBlue
+    fBlue, extraBillete, mercTN: filas.filter(f => f.merc).reduce((a, f) => a + f.porTN, 0),
+    costoFOB: costoTN - fleteTN, fobbing: costoTN - fleteTN - filas.filter(f => f.merc).reduce((a, f) => a + f.porTN, 0), margenBillete: margenTN / fBlue, profitBillete: margenTN * tn / fBlue
   };
 }
 
@@ -704,12 +711,21 @@ function cargarFormSim() {
   if (S.merc.proceso == null || S.merc.bolsasTN == null) { const p = partesNatural(S, T); S.merc.proceso ??= p[2][1]; S.merc.bolsasTN ??= Math.round(p[3][1] * 100) / 100; }
   delete S.merc.caidaTN; delete S.merc.descarteTN;
   $$('[data-k]').forEach(el => { const v = getP(S, el.dataset.k); if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
-  renderLineas(); renderOvr(); calc();
+  renderLineas(); renderRapidos(); renderOvr(); calc();
 }
 function renderOvr() {
   const items = [['consolidacion', 'Consolidación'], ['precinto', 'Precintado'], ['paquete', 'Paquete ISB'], ['surveyor', 'Surveyor'], ['fumigacion', 'Fumigación'], ['forrado', 'Forrado'], ['manta', 'Manta gel'], ['terminal', 'Terminal']];
   $('#ovr').innerHTML = items.map(([k, n]) => `<label>${n}<input type="number" step="any" data-o="${k}" value="${esc(S.overrides?.[k] ?? '')}" placeholder="tabla"></label>`).join('');
 }
+const RAPIDOS = [['Flete marítimo', l => l.flete], ['Flete planta → Bs As', l => /flete (planta|del campo|interno)/i.test(l.concepto)],
+  ['Gastos locales marítima', l => /gastos locales/i.test(l.concepto)], ['Gastos BL', l => /\bBL\b/.test(l.concepto)]];
+function renderRapidos() {
+  const usados = new Set();
+  $('#rapidos').innerHTML = RAPIDOS.map(([n, f]) => { const l = S.lineas.find(x => f(x) && !usados.has(x.id)); if (!l) return ''; usados.add(l.id);
+    const u = (l.moneda === 'USDb' ? 'USD billete' : l.moneda) + ' ' + BASES[l.base];
+    return `<label>${esc(n)} <span style="font-weight:500">(${esc(u)})</span><input type="number" step="any" data-ql="${l.id}" value="${esc(l.valor)}"></label>`; }).join('');
+}
+function syncRapidos() { $$('[data-ql]').forEach(el => { if (el !== document.activeElement) { const l = S.lineas.find(x => x.id === el.dataset.ql); if (l) el.value = l.valor; } }); }
 function renderLineas() {
   const opt = (arr, v) => arr.map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${n}</option>`).join('');
   const bases = Object.entries(BASES);
@@ -741,6 +757,8 @@ function calc() {
   $('#rPct').textContent = f2(R.margenPct) + '%';
   $('#rCosto').textContent = f2(R.costoTN);
   $('#rFact').textContent = 'USD ' + f0(R.facturado);
+  $('#rFob').textContent = f2(R.costoFOB);
+  $('#rFobbing').textContent = f2(R.fobbing);
   $('#mM').textContent = f2(R.margenTN); $('#mP').textContent = 'USD ' + f0(R.profit);
   const u = S.unidad === 'camion' ? ['camión', 'camiones'] : ['contenedor', 'contenedores'];
   $('#uInfo').textContent = `${R.unidades} ${u[R.unidades > 1 ? 1 : 0]} · ${f0(R.bolsas)} bolsas`;
@@ -1014,8 +1032,9 @@ document.addEventListener('input', e => {
     if (el.dataset.k === 'precio') { Q.precio = S.precio; cargarFormQ(); }
     calc(); }
   else if (el.dataset.o) { S.overrides = S.overrides || {}; if (el.value === '') delete S.overrides[el.dataset.o]; else S.overrides[el.dataset.o] = +el.value; calc(); }
+  else if (el.dataset.ql) { const l = S.lineas.find(x => x.id === el.dataset.ql); if (l) { l.valor = +el.value; const li = $(`.ln[data-id="${l.id}"] [data-l=valor]`); if (li) li.value = el.value; } calc(); }
   else if (el.dataset.l) { const l = S.lineas.find(x => x.id === el.closest('.ln').dataset.id); l[el.dataset.l] = el.dataset.l === 'valor' ? +el.value : el.value;
-    calc(); }
+    syncRapidos(); if (el.dataset.l !== 'valor') renderRapidos(); calc(); }
   else if (el.dataset.q) { Q[el.dataset.q] = el.type === 'checkbox' ? el.checked : el.value; if (el.dataset.q === 'cliente') autocompletarCliente(); renderCotizar(); guardarBorrador(); }
   else if (el.dataset.t) { const ks = el.dataset.t.split('.'); const last = ks.pop(); if (!puedeEditar) return; Td ??= clone(T); const o = ks.reduce((a, k) => a[k] ??= (isNaN(+last) ? {} : [0, 0]), Td); o[last] = el.tagName === 'SELECT' ? el.value : +el.value; estadoTarifas(); }
   else if (el.dataset.tn2) { if (!puedeEditar) return; Td ??= clone(T); Td.ncm[el.dataset.tn2] = el.value; estadoTarifas(); }
@@ -1024,14 +1043,14 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.add) { S.lineas.push({ id: Math.random().toString(36).slice(2, 9), grupo: +b.dataset.add, concepto: 'Nuevo gasto', valor: 0, moneda: 'USD', base: 'op' }); renderLineas(); calc();
+  if (b.dataset.add) { S.lineas.push({ id: Math.random().toString(36).slice(2, 9), grupo: +b.dataset.add, concepto: 'Nuevo gasto', valor: 0, moneda: 'USD', base: 'op' }); renderLineas(); renderRapidos(); calc();
     const ins = $$(`.ln[data-id="${S.lineas.at(-1).id}"] input`); ins[0]?.select(); }
-  else if (b.dataset.del) { S.lineas = S.lineas.filter(l => l.id !== b.dataset.del); renderLineas(); calc(); }
+  else if (b.dataset.del) { S.lineas = S.lineas.filter(l => l.id !== b.dataset.del); renderLineas(); renderRapidos(); calc(); }
   else if (b.dataset.abrir) abrir(b.dataset.abrir, false);
   else if (b.dataset.copiar) abrir(b.dataset.copiar, true);
   else if (b.dataset.borrar) { if (await pedirConfirmacion('¿Eliminar esta simulación del historial? No se puede deshacer.')) { await Store.borrar(b.dataset.borrar); if (actualId === b.dataset.borrar) actualId = null; cargarHist(); } }
   else if (b.id === 'bFlete') { const opts = S.lineas.filter(l => l.grupo === 3); const cur = opts.findIndex(l => l.flete); opts.forEach(l => l.flete = false);
-    const nx = opts[(cur + 1) % opts.length]; if (nx) nx.flete = true; renderLineas(); calc(); }
+    const nx = opts[(cur + 1) % opts.length]; if (nx) nx.flete = true; renderLineas(); renderRapidos(); calc(); }
 });
 $('#bPreset').onclick = async () => { if (await pedirConfirmacion('Se reemplazan los datos actuales por la plantilla. ¿Seguir?')) { S = PRESETS[$('#preset').value](); actualId = null; Q.numero = ''; Q.precio = S.precio; renderTarifas(); cargarFormSim(); sincronizarQDesdeSim(true); toast('Plantilla cargada'); } };
 $('#dlgOk').textContent = 'Confirmar';
