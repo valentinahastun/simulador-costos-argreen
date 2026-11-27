@@ -149,8 +149,8 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
    <label>Tarifa de la planta<select data-k="merc.grano"><option value="0">Cualquier grano</option><option value="1">Alubia / garbanzo</option></select></label>
    <label>Proceso USD/TN<input type="number" step="any" data-k="merc.proceso"></label>
    <label>Bolsas USD/TN<input type="number" step="any" data-k="merc.bolsasTN"></label>
-   <label>Caída USD/TN<input type="number" step="any" data-k="merc.caidaTN"></label>
-   <label>Ingreso por descarte USD/TN<input type="number" step="any" data-k="merc.descarteTN"></label>
+   <label>% caída<input type="number" step="any" data-k="merc.caida" placeholder="ej: 8"></label>
+   <label>Venta descarte USD/TN<input type="number" step="any" data-k="merc.descarte"></label>
    <p class="note" id="natTotal" style="grid-column:1/-1;margin:0"></p>
   </div>
  </div></div>
@@ -701,7 +701,8 @@ function pedirConfirmacion(txt) { return new Promise(res => { $('#dlgT').textCon
 /* ---------- Simulación ---------- */
 function cargarFormSim() {
   S.fxBlue ??= S.fx; S.cobroBillete ??= 0; S.merc.afuera ??= 0;
-  if (S.merc.tipo === 'natural' || S.merc.proceso == null) { const p = partesNatural(S, T); S.merc.proceso ??= p[2][1]; S.merc.bolsasTN ??= Math.round(p[3][1] * 100) / 100; S.merc.caidaTN ??= Math.round(p[4][1] * 100) / 100; S.merc.descarteTN ??= 0; }
+  if (S.merc.proceso == null || S.merc.bolsasTN == null) { const p = partesNatural(S, T); S.merc.proceso ??= p[2][1]; S.merc.bolsasTN ??= Math.round(p[3][1] * 100) / 100; }
+  delete S.merc.caidaTN; delete S.merc.descarteTN;
   $$('[data-k]').forEach(el => { const v = getP(S, el.dataset.k); if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
   renderLineas(); renderOvr(); calc();
 }
@@ -732,7 +733,7 @@ function calc() {
   R = calcular(S, T);
   $('#mProc').style.display = S.merc.tipo === 'procesada' ? '' : 'none';
   $('#mNat').style.display = S.merc.tipo === 'natural' ? '' : 'none';
-  if (S.merc.tipo === 'natural') { const p = partesNatural(S, T); $('#natTotal').innerHTML = 'Costo de la compra natural: <b>' + f2(p.reduce((x, y) => x + y[1], 0)) + ' USD/TN</b> (compra + flete + proceso + bolsas + caída − descarte)'; }
+  if (S.merc.tipo === 'natural') { const p = partesNatural(S, T); $('#natTotal').innerHTML = 'Caída: ' + esc(p[4][2]) + ' = <b>' + f2(p[4][1]) + '</b> · Descarte: ' + f2(p[5][1]) + ' · Costo de la compra natural: <b>' + f2(p.reduce((x, y) => x + y[1], 0)) + ' USD/TN</b>'; }
   const neg = R.margenTN < 0;
   $('#rMargen').textContent = 'USD ' + f2(R.margenTN); $('#rMargen').classList.toggle('neg', neg);
   $('#rMargenSub').textContent = `Precio ${f2(R.precio)}${R.extraBillete ? ' + ' + f2(R.extraBillete) + ' por cobro en billete' : ''} − costo ${f2(R.costoTN)} USD/TN · en billete ${f2(R.margenBillete)} USD/TN · profit ${f2(R.markup)}% sobre costo`;
