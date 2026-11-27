@@ -317,7 +317,7 @@ const PRESETS = {
     s.merc.precio = 750;
     const set = (c, v) => { s.lineas.find(l => l.concepto === c).valor = v; };
     set('Flete planta → Bs As', 30000); set('Scanner', 0); set('Comisión broker', 0);
-    set('Gastos locales marítima', 0); set('Flete marítimo', 5400); set('Gastos BL marítima', 0);
+    set('Gastos locales marítima', 0); set('Flete marítimo', 5400); s.lineas.find(l => l.flete).concepto = 'Flete internacional'; set('Gastos BL marítima', 0);
     return s;
   },
   azucar: () => ({
@@ -727,6 +727,7 @@ function renderRapidos() {
   const usados = new Set();
   $('#rapidos').innerHTML = RAPIDOS.map(([n, f]) => { const l = S.lineas.find(x => f(x) && !usados.has(x.id)); if (!l) return ''; usados.add(l.id);
     const u = (l.moneda === 'USDb' ? 'USD billete' : l.moneda) + ' ' + BASES[l.base];
+    n = l.concepto;
     return `<label>${esc(n)} <span style="font-weight:500">(${esc(u)})</span><input type="text" inputmode="decimal" autocomplete="off" data-ql="${l.id}" value="${esc(l.valor)}"></label>`; }).join('');
 }
 function syncRapidos() { $$('[data-ql]').forEach(el => { if (el !== document.activeElement) { const l = S.lineas.find(x => x.id === el.dataset.ql); if (l) el.value = l.valor; } }); }
