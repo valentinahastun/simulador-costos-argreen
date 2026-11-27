@@ -98,7 +98,7 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
 <section class="v on" id="v-simular">
 <div class="row" style="margin-bottom:14px">
  <label style="flex:1 1 220px">Plantilla
-  <select id="preset"><option value="bsas">Legumbres · Puerto Bs As</option><option value="chile">Legumbres · Chile</option><option value="azucar">Azúcar · camión</option></select></label>
+  <select id="preset"><option value="cortes">Legumbres · Bs As (planilla Cortes)</option><option value="bsas">Legumbres · Puerto Bs As (simulador viejo)</option><option value="chile">Legumbres · Chile</option><option value="azucar">Azúcar · camión</option></select></label>
  <button class="btn o" id="bPreset" style="align-self:flex-end">Cargar plantilla</button>
  <button class="btn" id="bGuardar" style="align-self:flex-end">Guardar simulación</button>
 </div>
@@ -109,7 +109,9 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
   <label>TN a exportar<input type="number" step="any" data-k="tn"></label>
   <label>Precio de venta USD/TN<input type="number" step="any" data-k="precio"></label>
   <label>Peso bolsa (kg)<input type="number" step="any" data-k="pesoBolsa"></label>
-  <label>Tipo de cambio ARS/USD<input type="number" step="any" data-k="fx"></label>
+  <label>TC oficial ARS/USD<input type="number" step="any" data-k="fx"></label>
+  <label>TC billete (blue)<input type="number" step="any" data-k="fxBlue"></label>
+  <label>Del precio, cobrado en billete USD/TN<input type="number" step="any" data-k="cobroBillete"></label>
  </div></div>
  <div class="card"><h2>Logística y servicios <small id="uInfo"></small></h2><div class="body">
   <div class="f">
@@ -138,15 +140,18 @@ input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
    <label>Unidad de precio<select data-k="merc.unidad"><option value="tn">por TN</option><option value="bolsa">por bolsa</option></select></label>
    <label>Kg bolsa de compra<input type="number" step="any" data-k="merc.kgBolsa"></label>
    <label>IVA incluido %<input type="number" step="any" data-k="merc.iva"></label>
+   <label>Monto por afuera (billete) USD/TN<input type="number" step="any" data-k="merc.afuera"></label>
   </div>
   <div class="f" id="mNat" style="margin-top:12px">
-   <label>Compra USD/TN<input type="number" step="any" data-k="merc.compra"></label>
+   <label>Compra natural USD/TN<input type="number" step="any" data-k="merc.compra"></label>
    <label>Flete campo → planta USD/TN<input type="number" step="any" data-k="merc.fleteCampo"></label>
    <label>Planta<select data-k="merc.planta" id="selPlanta"></select></label>
-   <label>Tarifa de proceso<select data-k="merc.grano"><option value="0">Cualquier grano</option><option value="1">Alubia / garbanzo</option></select></label>
-   <label>Bolsa vacía USD/u<input type="number" step="any" data-k="merc.bolsaUSD"></label>
-   <label>% caída<input type="number" step="any" data-k="merc.caida"></label>
-   <label>Venta descarte USD/TN<input type="number" step="any" data-k="merc.descarte"></label>
+   <label>Tarifa de la planta<select data-k="merc.grano"><option value="0">Cualquier grano</option><option value="1">Alubia / garbanzo</option></select></label>
+   <label>Proceso USD/TN<input type="number" step="any" data-k="merc.proceso"></label>
+   <label>Bolsas USD/TN<input type="number" step="any" data-k="merc.bolsasTN"></label>
+   <label>Caída USD/TN<input type="number" step="any" data-k="merc.caidaTN"></label>
+   <label>Ingreso por descarte USD/TN<input type="number" step="any" data-k="merc.descarteTN"></label>
+   <p class="note" id="natTotal" style="grid-column:1/-1;margin:0"></p>
   </div>
  </div></div>
  <div class="card"><h2>Gastos <small>valor · moneda · base de cálculo</small></h2><div class="body" id="lineas"></div></div>
@@ -263,8 +268,8 @@ const TARIFAS_BASE = {
   }
 };
 
-const BASES = { tn: 'por TN', op: 'por operación', unidad: 'por unidad', bolsa: 'por bolsa', pct: '% s/ precio sin flete' };
-const GRUPOS = ['Consolidado y terminal', 'Gastos operativos', 'Gastos mercadería', 'Logística y flete'];
+const BASES = { tn: 'por TN', op: 'por operación', unidad: 'por unidad', bolsa: 'por bolsa', pct: '% s/ precio sin flete', pctv: '% s/ precio de venta' };
+const GRUPOS = ['Consolidado y terminal', 'Gastos operativos', 'Gastos mercadería', 'Logística y flete', 'Pagaderos afuera'];
 
 function L(grupo, concepto, valor, moneda, base, extra) { return Object.assign({ id: Math.random().toString(36).slice(2, 9), grupo, concepto, valor, moneda, base }, extra || {}); }
 
@@ -274,7 +279,7 @@ const PRESETS = {
     unidad: 'c40', tnUnidad: 24, deposito: 'CENSER', surveyor: 'ISB', provFum: 'ISB', fumigacion: 'Fosfuro',
     mantaGel: false, forrado: true, terminal: true, consolidacion: true, precinto: true,
     merc: { tipo: 'procesada', precio: 670, moneda: 'USD', unidad: 'tn', kgBolsa: 50, iva: 0,
-      planta: 'Caballero', grano: 1, compra: 650, fleteCampo: 30, bolsaUSD: 0.3, caida: 10, descarte: 65 },
+      planta: 'Caballero', grano: 1, compra: 0, fleteCampo: 0, proceso: 55, bolsasTN: 0, caida: 0, descarte: 0 },
     lineas: [
       L(1, 'Honorarios despachante', 0.8, 'USD', 'pct'),
       L(1, 'Gastos operativos', 30, 'USD', 'op'),
@@ -295,6 +300,34 @@ const PRESETS = {
       L(3, 'Gastos BL marítima', 65, 'USD', 'op')
     ], overrides: {}
   }),
+  cortes: () => ({
+    nombre: 'Legumbres · Bs As (planilla Cortes)', producto: 'Poroto Dark', tn: 24, pesoBolsa: 25, precio: 1070, fx: 1570, fxBlue: 1690, cobroBillete: 0,
+    unidad: 'c20', tnUnidad: 24, deposito: 'CENSER', surveyor: 'ISB', provFum: 'ISB', fumigacion: 'Fosfuro',
+    mantaGel: false, forrado: true, terminal: true, consolidacion: true, precinto: false,
+    merc: { tipo: 'procesada', precio: 710, moneda: 'USD', unidad: 'tn', kgBolsa: 50, iva: 0, afuera: 0,
+      planta: 'Caballero', grano: 0, compra: 600, fleteCampo: 33, proceso: 65, bolsasTN: 12, caida: 8, descarte: 80 },
+    lineas: [
+      L(1, 'Honorarios despachante', 0.8, 'USD', 'pct'),
+      L(1, 'Gastos operativos', 100, 'USD', 'op'),
+      L(1, 'Movilidad y formulario', 50000, 'ARS', 'op'),
+      L(1, 'CO + Fito', 125000, 'ARS', 'op'),
+      L(1, 'Impresión de etiquetas', 12000, 'ARS', 'unidad'),
+      L(1, 'Etiquetado', 30000, 'ARS', 'unidad'),
+      L(1, 'Envío de documentos', 0, 'ARS', 'op'),
+      L(1, 'Gate', 30, 'USD', 'unidad'),
+      L(1, 'Censer bajada a piso', 0, 'USD', 'unidad'),
+      L(1, 'Gastos financieros', 0, 'USD', 'op'),
+      L(2, 'Flete del campo a Bs As', 95000, 'ARS', 'tn'),
+      L(2, 'Comisión de compra', 10, 'USD', 'tn'),
+      L(2, 'Carta de porte', 0, 'USD', 'tn'),
+      L(3, 'Gastos locales marítima', 580, 'USD', 'op'),
+      L(3, 'Flete marítimo', 1000, 'USD', 'unidad', { flete: true }),
+      L(3, 'Gastos BL marítima', 65, 'USD', 'op'),
+      L(4, 'Cable', 0, 'USDb', 'pctv'),
+      L(4, 'Comisión trader', 0, 'USDb', 'tn'),
+      L(4, 'Comisión broker', 2, 'USDb', 'pctv')
+    ], overrides: { consolidacion: 830 }
+  }),
   chile: () => {
     const s = PRESETS.bsas();
     Object.assign(s, { nombre: 'Legumbres · Chile', producto: 'Poroto Alubia', tn: 48, precio: 1070, fx: 1504, unidad: 'c20',
@@ -310,7 +343,7 @@ const PRESETS = {
     unidad: 'camion', tnUnidad: 27.5, deposito: 'CENSER', surveyor: 'Ninguno', provFum: 'ISB', fumigacion: 'Ninguno',
     mantaGel: false, forrado: false, terminal: false, consolidacion: false, precinto: false,
     merc: { tipo: 'procesada', precio: 36000, moneda: 'ARS', unidad: 'bolsa', kgBolsa: 50, iva: 21,
-      planta: 'Caballero', grano: 0, compra: 0, fleteCampo: 0, bolsaUSD: 0, caida: 0, descarte: 0 },
+      planta: 'Caballero', grano: 0, compra: 0, fleteCampo: 0, proceso: 0, bolsasTN: 0, caida: 0, descarte: 0 },
     lineas: [
       L(1, 'Honorarios despachante', 0.6, 'USD', 'pct'),
       L(1, 'Gastos operativos', 60, 'USD', 'unidad'),
@@ -328,19 +361,24 @@ const PRESETS = {
   })
 };
 
+/* Compra natural, igual que la columna Oficial de "Bs As Cortes":
+   caída = compra/(1−c) − compra ; descarte = −(venta descarte − (flete + proceso)) × c */
+function partesNatural(s, T) {
+  const m = s.merc, pl = (T.plantas || {})[m.planta] || [0, 0];
+  const compra = +m.compra || 0, flete = +m.fleteCampo || 0;
+  const proceso = m.proceso != null ? +m.proceso || 0 : (pl[m.grano ? 1 : 0] || 0);
+  const bolsas = m.bolsasTN != null ? +m.bolsasTN || 0 : (m.bolsaUSD || 0) * 1000 / (s.pesoBolsa || 25);
+  const c = (+m.caida || 0) / 100;
+  const caida = c > 0 && c < 1 ? compra / (1 - c) - compra : 0;
+  const netoDescarte = (+m.descarte || 0) - (flete + proceso);
+  const descarte = m.descarte ? -netoDescarte * c : 0;
+  return [['Compra natural', compra, 'USD/TN'], ['Flete campo → planta', flete, 'USD/TN'], ['Proceso (' + (m.planta || 'planta') + ')', proceso, 'USD/TN'],
+    ['Bolsas', bolsas, 'USD/TN'], ['Caída', caida, `${fmt(compra)} / (1 − ${fmt(c * 100, 1)}%) − ${fmt(compra)}`],
+    ['Descarte', descarte, `−(${fmt(+m.descarte || 0)} venta − ${fmt(flete + proceso)} flete + proceso) × ${fmt(c * 100, 1)}%`]];
+}
 function costoMercaderia(s, T) {
   const m = s.merc;
-  if (m.tipo === 'natural') {
-    const pl = T.plantas[m.planta] || [0, 0];
-    const proceso = pl[m.grano ? 1 : 0] || 0;
-    const bolsas = (m.bolsaUSD || 0) * 1000 / (s.pesoBolsa || 25);
-    const c = (m.caida || 0) / 100;
-    const valorCaida = c < 1 ? m.compra / (1 - c) - m.compra : 0;
-    const netoDescarte = (m.descarte || 0) - (proceso + (m.fleteCampo || 0));
-    const recupero = netoDescarte * c;
-    const total = m.compra + (m.fleteCampo || 0) + proceso + bolsas + valorCaida - recupero;
-    return { total, nota: `Natural: compra ${fmt(m.compra)} + flete ${fmt(m.fleteCampo)} + proceso ${fmt(proceso)} + bolsas ${fmt(bolsas)} + caída ${fmt(valorCaida)} − descarte ${fmt(recupero)}` };
-  }
+  if (m.tipo === 'natural') { const p = partesNatural(s, T); return { total: p.reduce((a, x) => a + x[1], 0), nota: 'Natural' }; }
   let v = m.precio / (1 + (m.iva || 0) / 100);
   if (m.moneda === 'ARS') v /= s.fx;
   if (m.unidad === 'bolsa') v *= 1000 / (m.kgBolsa || 50);
@@ -357,6 +395,7 @@ function calcular(s, T, precioOverride) {
   const unidades = Math.max(1, Math.ceil(tn / (s.tnUnidad || 24) - 1e-9));
   const bolsasTN = 1000 / (s.pesoBolsa || 25);
   const iu = s.unidad === 'c40' ? 1 : 0; // camión usa columna 20'
+  const fBlue = (s.fxBlue || s.fx) / s.fx; // billete → oficial
   const filas = [];
   const add = (grupo, concepto, detalle, porTN, key) => {
     if (key && s.overrides && s.overrides[key] != null && s.overrides[key] !== '') {
@@ -389,30 +428,38 @@ function calcular(s, T, precioOverride) {
   if (s.terminal && s.unidad !== 'camion') add(0, 'Ingreso a terminal', `${uLabel} · USD ${fmt(T.terminal[iu], 0)} × ${unidades}`, porUnidad(T.terminal[iu]), 'terminal');
 
   // Mercadería
-  const merc = costoMercaderia(s, T);
-  add(2, 'Mercadería', merc.nota, merc.total);
+  if (s.merc.tipo === 'natural') {
+    for (const [n, v, d] of partesNatural(s, T)) if (v || n === 'Compra natural') add(2, n, 'Natural · ' + d, v);
+  } else { const merc = costoMercaderia(s, T); add(2, 'Mercadería', merc.nota, merc.total); }
+  if (+s.merc.afuera) add(2, 'Compra: monto por afuera', `USD ${fmt(+s.merc.afuera)} billete × ${fmt(fBlue, 4)}`, +s.merc.afuera * fBlue);
 
   // Líneas manuales
-  const fleteTN = s.lineas.filter(l => l.flete).reduce((a, l) => a + lineaTN(l, s, unidades, tn, bolsasTN, 0), 0);
+  const fleteTN = s.lineas.filter(l => l.flete).reduce((a, l) => a + lineaTN(l, s, unidades, tn, bolsasTN, 0, precio), 0);
   for (const l of s.lineas) {
-    const v = lineaTN(l, s, unidades, tn, bolsasTN, precio - fleteTN);
-    const det = l.base === 'pct' ? `${fmt(l.valor, 2)}% × ${fmt(precio - fleteTN)}` : `${l.moneda} ${fmt(l.valor, l.valor % 1 ? 2 : 0)} ${BASES[l.base]}`;
+    const baseP = precio - (+s.cobroBillete || 0) - fleteTN;
+    const v = lineaTN(l, s, unidades, tn, bolsasTN, baseP, precio);
+    const bill = l.moneda === 'USDb' ? ' · billete × ' + fmt(fBlue, 4) : '';
+    const det = (l.base === 'pct' ? `${fmt(l.valor, 2)}% × ${fmt(baseP)}` : l.base === 'pctv' ? `${fmt(l.valor, 2)}% × ${fmt(precio)}` : `${l.moneda === 'USDb' ? 'USD' : l.moneda} ${fmt(l.valor, l.valor % 1 ? 2 : 0)} ${BASES[l.base]}`) + bill;
     add(l.grupo, l.concepto, det, v); filas[filas.length - 1].lid = l.id;
   }
   const costoTN = filas.reduce((a, f) => a + f.porTN, 0);
-  const margenTN = precio - costoTN;
+  const extraBillete = (+s.cobroBillete || 0) * (fBlue - 1); // diferencia cobrada en billete, llevada a oficial
+  const margenTN = precio + extraBillete - costoTN;
   const grupos = GRUPOS.map((g, i) => ({ nombre: g, porTN: filas.filter(f => f.grupo === i).reduce((a, f) => a + f.porTN, 0) }));
   return {
     filas, grupos, unidades, bolsas: Math.round(tn * bolsasTN), precio, costoTN, margenTN, fleteTN,
     costoTotal: costoTN * tn, facturado: precio * tn, profit: margenTN * tn,
-    margenPct: precio ? margenTN / precio * 100 : 0, markup: costoTN ? margenTN / costoTN * 100 : 0
+    margenPct: precio ? margenTN / precio * 100 : 0, markup: costoTN ? margenTN / costoTN * 100 : 0,
+    fBlue, extraBillete, margenBillete: margenTN / fBlue, profitBillete: margenTN * tn / fBlue
   };
 }
 
-function lineaTN(l, s, unidades, tn, bolsasTN, basePct) {
+function lineaTN(l, s, unidades, tn, bolsasTN, basePct, precio) {
   const v = +l.valor || 0;
-  if (l.base === 'pct') return v / 100 * basePct;
-  const usd = l.moneda === 'ARS' ? v / s.fx : v;
+  const fb = l.moneda === 'USDb' ? (s.fxBlue || s.fx) / s.fx : 1;
+  if (l.base === 'pct') return v / 100 * basePct * fb;
+  if (l.base === 'pctv') return v / 100 * precio * fb;
+  const usd = l.moneda === 'ARS' ? v / s.fx : v * fb;
   switch (l.base) {
     case 'tn': return usd;
     case 'op': return usd / tn;
@@ -616,7 +663,7 @@ const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAl
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
 const f0 = n => fmt(n, 0), f2 = n => fmt(n, 2);
-const COLS = ['#28466e', '#7d93b2', '#56bd8b', '#c9a24a'];
+const COLS = ['#28466e', '#7d93b2', '#56bd8b', '#c9a24a', '#b5727a'];
 const hoyISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
 const fechaTxt = iso => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 
@@ -679,6 +726,8 @@ function pedirConfirmacion(txt) { return new Promise(res => { $('#dlgT').textCon
 
 /* ---------- Simulación ---------- */
 function cargarFormSim() {
+  S.fxBlue ??= S.fx; S.cobroBillete ??= 0; S.merc.afuera ??= 0;
+  if (S.merc.tipo === 'natural' || S.merc.proceso == null) { const p = partesNatural(S, T); S.merc.proceso ??= p[2][1]; S.merc.bolsasTN ??= Math.round(p[3][1] * 100) / 100; S.merc.caidaTN ??= Math.round(p[4][1] * 100) / 100; S.merc.descarteTN ??= 0; }
   $$('[data-k]').forEach(el => { const v = getP(S, el.dataset.k); if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
   renderLineas(); renderOvr(); calc();
 }
@@ -690,13 +739,13 @@ function renderLineas() {
   const opt = (arr, v) => arr.map(([k, n]) => `<option value="${k}"${k === v ? ' selected' : ''}>${n}</option>`).join('');
   const bases = Object.entries(BASES);
   let h = '';
-  [1, 2, 3].forEach(g => {
+  [1, 2, 3, 4].forEach(g => {
     h += `<div class="gt"><span>${GRUPOS[g]}</span><button class="btn x" data-add="${g}">+ Agregar gasto</button></div>`;
     S.lineas.filter(l => l.grupo === g).forEach(l => {
       h += `<div class="ln" data-id="${l.id}">
         <input class="c" data-l="concepto" value="${esc(l.concepto)}" aria-label="Concepto">
         <input type="number" step="any" data-l="valor" value="${esc(l.valor)}" aria-label="Valor">
-        <select class="m" data-l="moneda" aria-label="Moneda"${l.base === 'pct' ? ' disabled' : ''}>${opt([['USD', 'USD'], ['ARS', 'ARS']], l.moneda)}</select>
+        <select class="m" data-l="moneda" aria-label="Moneda">${opt([['USD', 'USD'], ['ARS', 'ARS'], ['USDb', 'USD billete']], l.moneda)}</select>
         <select data-l="base" aria-label="Base">${opt(bases, l.base)}</select>
         <button class="btn x" data-del="${l.id}" aria-label="Quitar ${esc(l.concepto)}">✕</button>
         <div class="tn" data-tn="${l.id}"></div></div>`;
@@ -709,9 +758,10 @@ function calc() {
   R = calcular(S, T);
   $('#mProc').style.display = S.merc.tipo === 'procesada' ? '' : 'none';
   $('#mNat').style.display = S.merc.tipo === 'natural' ? '' : 'none';
+  if (S.merc.tipo === 'natural') { const p = partesNatural(S, T); $('#natTotal').innerHTML = 'Costo de la compra natural: <b>' + f2(p.reduce((x, y) => x + y[1], 0)) + ' USD/TN</b> (compra + flete + proceso + bolsas + caída − descarte)'; }
   const neg = R.margenTN < 0;
   $('#rMargen').textContent = 'USD ' + f2(R.margenTN); $('#rMargen').classList.toggle('neg', neg);
-  $('#rMargenSub').textContent = `Precio ${f2(R.precio)} − costo ${f2(R.costoTN)} USD/TN · markup ${f2(R.markup)}% sobre costo`;
+  $('#rMargenSub').textContent = `Precio ${f2(R.precio)}${R.extraBillete ? ' + ' + f2(R.extraBillete) + ' por cobro en billete' : ''} − costo ${f2(R.costoTN)} USD/TN · en billete ${f2(R.margenBillete)} USD/TN · profit ${f2(R.markup)}% sobre costo`;
   $('#rProfit').textContent = 'USD ' + f0(R.profit); $('#rProfit').classList.toggle('neg', neg);
   $('#rPct').textContent = f2(R.margenPct) + '%';
   $('#rCosto').textContent = f2(R.costoTN);
@@ -983,13 +1033,14 @@ document.addEventListener('input', e => {
   const el = e.target;
   if (el.dataset.k) { const v = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? (el.value === '' ? 0 : +el.value) : el.value);
     setP(S, el.dataset.k, el.dataset.k === 'merc.grano' ? +v : v);
+    if (el.dataset.k === 'merc.planta' || el.dataset.k === 'merc.grano') { const pl = T.plantas[S.merc.planta] || [0, 0]; S.merc.proceso = pl[S.merc.grano ? 1 : 0] || 0; $('[data-k="merc.proceso"]').value = S.merc.proceso; }
     if (el.dataset.k === 'producto') { sincronizarQDesdeSim(false); pistaCliente(); }
     if (el.dataset.k === 'unidad') { S.tnUnidad = S.unidad === 'camion' ? 27.5 : 24; $('[data-k=tnUnidad]').value = S.tnUnidad; }
     if (el.dataset.k === 'precio') { Q.precio = S.precio; cargarFormQ(); }
     calc(); }
   else if (el.dataset.o) { S.overrides = S.overrides || {}; if (el.value === '') delete S.overrides[el.dataset.o]; else S.overrides[el.dataset.o] = +el.value; calc(); }
   else if (el.dataset.l) { const l = S.lineas.find(x => x.id === el.closest('.ln').dataset.id); l[el.dataset.l] = el.dataset.l === 'valor' ? +el.value : el.value;
-    if (el.dataset.l === 'base') { const m = el.closest('.ln').querySelector('[data-l=moneda]'); m.disabled = el.value === 'pct'; } calc(); }
+    calc(); }
   else if (el.dataset.q) { Q[el.dataset.q] = el.type === 'checkbox' ? el.checked : el.value; if (el.dataset.q === 'cliente') autocompletarCliente(); renderCotizar(); guardarBorrador(); }
   else if (el.dataset.t) { const ks = el.dataset.t.split('.'); const last = ks.pop(); if (!puedeEditar) return; Td ??= clone(T); const o = ks.reduce((a, k) => a[k] ??= (isNaN(+last) ? {} : [0, 0]), Td); o[last] = el.tagName === 'SELECT' ? el.value : +el.value; estadoTarifas(); }
   else if (el.dataset.tn2) { if (!puedeEditar) return; Td ??= clone(T); Td.ncm[el.dataset.tn2] = el.value; estadoTarifas(); }
