@@ -76,6 +76,10 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy2);padding:8px 0;
 .scroll{overflow-x:auto}
 .tar td{vertical-align:middle}.tar input{min-height:38px;padding:6px 8px;max-width:140px}
 .tar td,.tar th{white-space:nowrap}
+.tbar{position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin-bottom:16px}
+.tbar.dirty{background:var(--soft);border-color:var(--greenb)}.tbar.dirty .note{color:var(--ink);font-weight:600}
+input:disabled,select:disabled{opacity:.75;cursor:not-allowed}
+[hidden]{display:none!important}
 .dlg{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
 .dlg.on{display:flex}.dlg>div{background:var(--card);border-radius:12px;padding:20px;max-width:420px}
 @media(max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}.res{position:static}
@@ -175,23 +179,25 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy2);padding:8px 0;
 <div class="grid">
 <div>
  <div class="card"><h2>Cliente</h2><div class="body f">
-  <label>Cliente<input data-q="cliente" placeholder="Razón social"></label>
+  <label>Cliente<input data-q="cliente" list="dlClientes" autocomplete="off" placeholder="Razón social"></label>
   <label>País / ciudad<input data-q="pais"></label>
   <label>N° de cotización<input data-q="numero"></label>
   <label>Fecha<input type="date" data-q="fecha"></label>
   <label>Validez (días)<input type="number" data-q="validez"></label>
   <label>Idioma del PDF<select data-q="idioma"><option value="es">Español</option><option value="en">English</option></select></label>
+  <p class="note" id="qHint" style="grid-column:1/-1;margin:0"></p>
+  <div class="row" style="grid-column:1/-1"><span class="note" id="vEstado"></span><button class="btn x" id="bVentas" hidden>Actualizar desde VENTAS</button></div>
  </div></div>
  <div class="card"><h2>Oferta</h2><div class="body f">
   <label>Precio USD/TN<input type="number" step="any" data-q="precio"></label>
   <label>Incoterm<select data-q="incoterm"><option>FOB</option><option>CFR</option><option>CIF</option><option>FCA</option><option>CPT</option><option>DAP</option></select></label>
   <label>Puerto de carga<input data-q="puertoCarga"></label>
-  <label>Destino<input data-q="destino"></label>
+  <label>Destino<input data-q="destino" list="dlDestinos" autocomplete="off"></label>
   <label>Embarque<input data-q="embarque" placeholder="Ej: Diciembre 2026"></label>
   <label>Calibre<input data-q="calibre"></label>
   <label>Envase<input data-q="envase" placeholder="Bolsa polipropileno 25 kg"></label>
   <label>Posición NCM<input data-q="ncm"></label>
-  <label style="grid-column:1/-1">Forma de pago<input data-q="pago" placeholder="Ej: 30% anticipo, 70% contra copia de documentos"></label>
+  <label style="grid-column:1/-1">Forma de pago<input data-q="pago" list="dlPagos" autocomplete="off" placeholder="Ej: 30% anticipo, 70% contra copia de documentos"></label>
   <label style="grid-column:1/-1">Observaciones<textarea data-q="obs"></textarea></label>
   <label style="grid-column:1/-1">Contacto en el pie<input data-q="contacto" placeholder="Nombre · email · teléfono"></label>
   <label class="chk"><input type="checkbox" data-q="specs">Incluir características del catálogo</label>
@@ -220,7 +226,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy2);padding:8px 0;
 
 <!-- TARIFAS -->
 <section class="v" id="v-tarifas">
-<p class="note">Los cambios se guardan solos y aplican a todas las simulaciones. <button class="btn x" id="bReset">Restaurar valores de la planilla</button></p>
+<div class="tbar" id="tBar"><span id="tEstado" class="note"></span><div class="row"><button class="btn x" id="bReset">Restaurar valores de la planilla</button><button class="btn o" id="bDescartar" hidden>Descartar</button><button class="btn g" id="bGuardarT" hidden>Guardar tarifas</button></div></div>
 <div class="card"><h2>Depósito fiscal <small>por unidad</small></h2><div class="scroll"><table class="tar" id="tDep"></table></div></div>
 <div class="card"><h2>Surveyor y fumigación <small>USD por contenedor</small></h2><div class="scroll"><table class="tar" id="tSurv"></table></div></div>
 <div class="card"><h2>Paquete ISB, terminal y plantas</h2><div class="scroll"><table class="tar" id="tOtros"></table></div></div>
@@ -228,6 +234,7 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy2);padding:8px 0;
 </section>
 </main>
 <div class="mbar"><span>Margen <b id="mM"></b>/TN</span><span>Profit <b id="mP"></b></span></div>
+<datalist id="dlClientes"></datalist><datalist id="dlDestinos"></datalist><datalist id="dlPagos"></datalist>
 <div class="toast" id="toast"></div>
 <div class="dlg" id="dlg"><div><p id="dlgT"></p><div class="row"><button class="btn" id="dlgOk">Eliminar</button><button class="btn o" id="dlgNo">Cancelar</button></div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -252,7 +259,7 @@ const TARIFAS_BASE = {
   ncm: {
     Garbanzo: '0713.20.90', 'Poroto Mungo': '0713.31.90.900N', 'Poroto Adzuki': '0713.32.90.100G',
     'Poroto Negro': '0713.33.19.100J', 'Poroto Alubia': '0713.33.29.11', 'Poroto Colorado Light': '0713.33.99.112',
-    'Poroto Colorado Dark': '0713.33.99.122Y', 'Poroto Cranberry': '0713.33.99.929G', 'Azúcar': ''
+    'Poroto Colorado Dark': '0713.33.99.122Y', 'Poroto Cranberry': '0713.33.99.929G', 'Azúcar': '1701.99.00.900G'
   }
 };
 
@@ -631,6 +638,14 @@ const Store = {
     return this.lsGet(k, d);
   },
   async set(k, v) { this.lsSet(k, v); if (this.db) { try { await this.ref(k).set(v); } catch (e) { toast('No se pudo sincronizar, quedó guardado en este equipo'); } } },
+  async setTarifas(t) {
+    const meta = { at: new Date().toISOString(), by: this.uid || null };
+    if (this.db) {
+      try { await this.db.doc('config/tarifas').set({ ...clone(t), _meta: meta }); }
+      catch (e) { toast(e?.code === 'invalid_argument' ? 'No tenés permiso para cambiar tarifas.' : 'No se pudo guardar. Probá de nuevo.'); return false; }
+    }
+    this.lsSet('tarifas', t); this.lsSet('tarifasMeta', meta); tMeta = meta; return true;
+  },
   async lista() {
     if (this.db) { try { const q = await this.db.collection(`data/users/${this.uid}`).get(); return q.docs.filter(d => d.id.startsWith('sim_')).map(d => ({ id: d.id, ...d.data() })); } catch (e) {} }
     return this.lsGet('historial', []);
@@ -644,8 +659,6 @@ const Store = {
     this.lsSet('historial', this.lsGet('historial', []).filter(x => x.id !== id));
   }
 };
-let debT = null;
-const guardarTarifas = () => { clearTimeout(debT); debT = setTimeout(() => Store.set('tarifas', T), 700); };
 const guardarBorrador = () => Store.lsSet('borrador', { S, Q });
 
 /* ---------- Utilidades UI ---------- */
@@ -738,7 +751,26 @@ function sincronizarQDesdeSim(forzar) {
   if (S.unidad === 'camion' && Q.puertoCarga === 'Buenos Aires, Argentina') Q.puertoCarga = 'Argentina';
   cargarFormQ(); renderCotizar();
 }
-async function nuevoNumero() { ajustes.contador = (ajustes.contador || 0) + 1; await Store.set('ajustes', ajustes); return `ARG-${new Date().getFullYear() % 100}-${String(ajustes.contador).padStart(4, '0')}`; }
+async function nuevoNumero() {
+  const yy = new Date().getFullYear() % 100;
+  if (Store.db) {
+    const ref = Store.db.doc('numeracion/cotizaciones');
+    for (let i = 0; i < 6; i++) {
+      try {
+        const r = await ref.acquire({ holder: Store.uid, ttlMs: 4000 });
+        if (r.acquired) {
+          const s = await ref.get(); const d = s.exists ? s.data() : {};
+          const n = Math.max(d.anio === yy ? (+d.ultimo || 0) : 0, ajustes.contador || 0) + 1;
+          await ref.set({ anio: yy, ultimo: n }); ajustes.contador = n; Store.lsSet('ajustes', ajustes);
+          return `ARG-${yy}-${String(n).padStart(4, '0')}`;
+        }
+      } catch (e) { break; }
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
+    }
+  }
+  return nuevoNumeroLocal();
+}
+async function nuevoNumeroLocal() { ajustes.contador = (ajustes.contador || 0) + 1; await Store.set('ajustes', ajustes); return `ARG-${new Date().getFullYear() % 100}-${String(ajustes.contador).padStart(4, '0')}`; }
 function datosPDF() {
   const fecha = Q.fecha || hoyISO(); const d = new Date(fecha + 'T12:00'); d.setDate(d.getDate() + (+Q.validez || 0));
   return { ...Q, producto: S.producto, tn: S.tn, unidades: R.unidades, unidad: S.unidad, precio: +Q.precio || 0,
@@ -763,6 +795,91 @@ async function descargarPDF() {
   await guardar(true);
 }
 
+
+/* ---------- Autocompletar desde la solapa VENTAS (Google Drive) ---------- */
+const SEG_ID = '11w6aYtjWvqgjSaFQZOPJOecfmT4JzUvNm2nzxeLj6II';
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+let VENTAS = null, cargandoV = false;
+const normK = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.,;]+$/, '').replace(/\s+/g, ' ').trim();
+const numV = s => { const m = String(s || '').replace(/,/g, '').match(/-?\d+(\.\d+)?/); return m ? +m[0] : null; };
+function buscarB64(o, d = 0) {
+  if (d > 6 || o == null) return null;
+  if (typeof o === 'string') return o.length > 2000 && /^[A-Za-z0-9+/=\s]+$/.test(o.slice(0, 400)) ? o : null;
+  if (typeof o === 'object') for (const k of Object.keys(o)) { const r = buscarB64(o[k], d + 1); if (r) return r; }
+  return null;
+}
+function cargarScript(src) { return new Promise((ok, mal) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = mal; document.head.appendChild(s); }); }
+function procesarVentas(rows, at) {
+  const hi = rows.findIndex(r => r.includes('Importer') && r.includes('Contrato')); if (hi < 0) throw { code: 'formato' };
+  const H = rows[hi], col = n => H.indexOf(n), last = n => H.lastIndexOf(n);
+  const c = { f: col('Fecha'), cv: col('Contrato'), prod: col('Producto'), imp: col('Importer'), inc: last('Incoterm'), usd: col('USD') >= 0 ? col('USD') : col('usd'), pago: col('Payment terms'), dest: col('Destination'), size: col('Size') };
+  const cli = new Map(), dst = new Map(), pag = new Map();
+  const cuenta = (m, v) => { const k = normK(v); if (!k) return; const e = m.get(k) || { v: '', n: 0 }; e.v = String(v).trim(); e.n++; m.set(k, e); };
+  for (const r of rows.slice(hi + 1)) {
+    const nom = String(r[c.imp] || '').trim(); if (!nom || !r[c.cv]) continue;
+    const k = normK(nom), e = cli.get(k) || { nombre: nom, prods: {} };
+    e.nombre = nom;
+    if (r[c.pago]) e.pago = String(r[c.pago]).trim(); if (r[c.dest]) e.destino = String(r[c.dest]).trim();
+    if (r[c.inc]) e.incoterm = String(r[c.inc]).trim().toUpperCase().replace('CRF', 'CFR');
+    const venta = { fecha: r[c.f], cv: r[c.cv], prod: r[c.prod], precio: numV(r[c.usd]), inc: e.incoterm || '', size: r[c.size] };
+    e.ultima = venta; if (r[c.prod]) e.prods[normK(r[c.prod])] = venta;
+    cli.set(k, e); cuenta(dst, r[c.dest]); cuenta(pag, r[c.pago]);
+  }
+  const top = m => [...m.values()].sort((a, b) => b.n - a.n).map(x => x.v);
+  return { at, clientes: [...cli.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)), destinos: top(dst), pagos: top(pag) };
+}
+function renderDatalists() {
+  const op = arr => [...new Set(arr.filter(Boolean))].slice(0, 300).map(v => `<option value="${esc(v)}">`).join('');
+  const deHist = HIST.map(h => h.Q || {});
+  $('#dlClientes').innerHTML = op([...(VENTAS?.clientes || []).map(c => c.nombre), ...deHist.map(q => q.cliente)]);
+  $('#dlDestinos').innerHTML = op([...(VENTAS?.destinos || []), ...deHist.map(q => q.destino)]);
+  $('#dlPagos').innerHTML = op([...(VENTAS?.pagos || []), ...deHist.map(q => q.pago)]);
+  if (VENTAS) { $('#vEstado').textContent = `${VENTAS.clientes.length} clientes de la solapa VENTAS · actualizado ${new Date(VENTAS.at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}`; }
+  pistaCliente();
+}
+function fechaVenta(f) { const m = String(f).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/); return m ? `${m[2].padStart(2, '0')}/${m[1].padStart(2, '0')}/${m[3]}` : f; }
+function clienteVentas() { const k = normK(Q.cliente); return k && VENTAS ? VENTAS.clientes.find(c => normK(c.nombre) === k) : null; }
+function pistaCliente() {
+  const c = clienteVentas(), el = $('#qHint'); if (!c) { el.textContent = ''; return; }
+  const v = c.prods[normK(S.producto)] || c.prods[normK(S.producto.replace(/^Poroto /, ''))], u = v || c.ultima;
+  el.textContent = u ? `${v ? 'Última venta de ' + S.producto : 'Última venta'} a este cliente: ${u.cv} · ${u.prod || ''}${u.size ? ' ' + u.size : ''} · ${u.precio != null ? f2(u.precio) + ' USD/TN' : 'sin precio'} ${u.inc}${u.fecha ? ' (' + fechaVenta(u.fecha) + ')' : ''}` : '';
+}
+function autocompletarCliente() {
+  const c = clienteVentas(); pistaCliente(); if (!c) return;
+  Q._auto = Q._auto || {};
+  for (const [campo, val] of [['pago', c.pago], ['destino', c.destino], ['incoterm', c.incoterm]]) {
+    if (!val) continue;
+    if (campo === 'incoterm' && !['FOB', 'CFR', 'CIF', 'FCA', 'CPT', 'DAP'].includes(val)) continue;
+    if (!Q[campo] || Q._auto[campo] === Q[campo] || (campo === 'incoterm')) { Q[campo] = val; Q._auto[campo] = val; }
+  }
+  cargarFormQ(); renderCotizar(); guardarBorrador();
+}
+async function cargarVentas(forzar) {
+  if (cargandoV) return;
+  const mcp = window.claude?.use ? await window.claude.use('mcp').catch(() => null) : null;
+  if (!mcp) { $('#vEstado').textContent = VENTAS ? $('#vEstado').textContent : ''; return; }
+  $('#bVentas').hidden = false; cargandoV = true; $('#bVentas').disabled = true;
+  if (!VENTAS || forzar) $('#vEstado').textContent = 'Leyendo la solapa VENTAS…';
+  try {
+    const r = await mcp.callTool('Google Drive', 'download_file_content', { fileId: SEG_ID, exportMimeType: XLSX_MIME },
+      { cache: forzar ? { staleTime: 0, gcTime: 604800000, refresh: true } : { staleTime: 6 * 3600e3, gcTime: 604800000 } });
+    const b64 = buscarB64(r); if (!b64) throw { code: 'formato' };
+    if (!window.XLSX) await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const wb = XLSX.read(b64.replace(/\s/g, ''), { type: 'base64', sheets: ['VENTAS'] });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets.VENTAS, { header: 1, raw: false, defval: '' });
+    VENTAS = procesarVentas(rows, r.cache?.storedAt || Date.now()); Store.lsSet('ventas', VENTAS); renderDatalists();
+  } catch (e) {
+    const m = { server_not_connected: 'Para autocompletar desde VENTAS, agregá Google Drive en claude.ai → Configuración → Conectores.',
+      needs_reauth: 'Volvé a conectar Google Drive en claude.ai → Configuración → Conectores.',
+      not_in_manifest: 'No diste permiso a Google Drive para esta página. Tocá Actualizar para volver a intentarlo.',
+      approval_required: 'Falta tu aprobación para leer Google Drive. Tocá Actualizar.',
+      tool_error: 'Google Drive no dejó leer la planilla (¿tenés acceso a Seguimiento COMEX ARGREEN?).',
+      formato: 'No encontré la solapa VENTAS con el formato esperado.' }[e?.code];
+    $('#vEstado').textContent = (m || 'No se pudo leer VENTAS ahora.') + (VENTAS ? ' Uso la última copia.' : '');
+    if (e?.retryable && !forzar) setTimeout(() => { cargandoV = false; cargarVentas(false); }, (e.retryAfterMs || 3000) + Math.random() * 1500);
+  } finally { cargandoV = false; $('#bVentas').disabled = false; }
+}
+
 /* ---------- Historial ---------- */
 let HIST = [], actualId = null;
 async function guardar(silencioso) {
@@ -775,7 +892,7 @@ async function guardar(silencioso) {
 }
 async function cargarHist() {
   HIST = (await Store.lista()).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  renderHist();
+  renderHist(); renderDatalists();
 }
 function renderHist() {
   const q = ($('#hBuscar').value || '').toLowerCase();
@@ -794,27 +911,44 @@ function abrir(id, duplicar) {
   cargarFormSim(); cargarFormQ(); ir('simular'); toast(duplicar ? 'Copia lista para editar' : 'Simulación abierta');
 }
 
-/* ---------- Tarifas ---------- */
+/* ---------- Tarifas: borrador, botón Guardar y permisos ---------- */
+let Td = null, tMeta = null, puedeEditar = true, USER = null;
 function renderTarifas() {
-  const n = (path, v) => `<input type="number" step="any" data-t="${path}" value="${esc(v)}">`;
+  const V = Td || T, ro = puedeEditar ? '' : ' disabled';
+  const n = (path, v) => `<input type="number" step="any" data-t="${path}" value="${esc(v)}"${ro}>`;
   $('#tDep').innerHTML = '<thead><tr><th>Depósito</th><th>Moneda</th><th class="num">Consolidación 20\'</th><th class="num">Consolidación 40\'</th><th class="num">Camión</th><th class="num">Precintado ARS/u</th></tr></thead><tbody>' +
-    Object.entries(T.deposito).map(([k, d]) => `<tr><td>${esc(k)}</td><td><select data-t="deposito.${k}.moneda"><option${d.moneda === 'USD' ? ' selected' : ''}>USD</option><option${d.moneda === 'ARS' ? ' selected' : ''}>ARS</option></select></td>
+    Object.entries(V.deposito).map(([k, d]) => `<tr><td>${esc(k)}</td><td><select data-t="deposito.${k}.moneda"${ro}><option${d.moneda === 'USD' ? ' selected' : ''}>USD</option><option${d.moneda === 'ARS' ? ' selected' : ''}>ARS</option></select></td>
       <td>${n(`deposito.${k}.c20`, d.c20)}</td><td>${n(`deposito.${k}.c40`, d.c40)}</td><td>${n(`deposito.${k}.camion`, d.camion)}</td><td>${n(`deposito.${k}.precinto`, d.precinto)}</td></tr>`).join('') + '</tbody>';
   const provs = ['ISB', 'OPERAGRO', 'BIOFIX'];
   $('#tSurv').innerHTML = '<thead><tr><th>Servicio</th>' + provs.map(p => `<th>${p} 20'</th><th>${p} 40'</th>`).join('') + '</tr></thead><tbody>' +
-    Object.entries(T.surveyor).map(([s, o]) => `<tr><td>${esc(s)}</td>` + provs.map(p => `<td>${n(`surveyor.${s}.${p}.0`, o[p]?.[0] ?? 0)}</td><td>${n(`surveyor.${s}.${p}.1`, o[p]?.[1] ?? 0)}</td>`).join('') + '</tr>').join('') + '</tbody>';
-  $('#tOtros').innerHTML = `<tbody><tr><td>Paquete ISB 20' (1 a 4 cont.)</td><td>${n('paqueteISB.c20_1a4', T.paqueteISB.c20_1a4)}</td></tr>
-    <tr><td>Paquete ISB 20' (5 o más)</td><td>${n('paqueteISB.c20_5mas', T.paqueteISB.c20_5mas)}</td></tr><tr><td>Paquete ISB 40'</td><td>${n('paqueteISB.c40', T.paqueteISB.c40)}</td></tr>
-    <tr><td>Ingreso a terminal 20'</td><td>${n('terminal.0', T.terminal[0])}</td></tr><tr><td>Ingreso a terminal 40'</td><td>${n('terminal.1', T.terminal[1])}</td></tr>` +
-    Object.entries(T.plantas).map(([p, v]) => `<tr><td>Planta ${esc(p)} · cualquier grano / alubia-garbanzo (USD/TN)</td><td><div class="row">${n(`plantas.${p}.0`, v[0])}${n(`plantas.${p}.1`, v[1])}</div></td></tr>`).join('') + '</tbody>';
-  $('#tNcm').innerHTML = '<tbody>' + Object.entries(T.ncm).map(([p, v]) => `<tr><td>${esc(p)}</td><td><input data-tn2="${esc(p)}" value="${esc(v)}" style="max-width:220px"></td></tr>`).join('') + '</tbody>';
+    Object.entries(V.surveyor).map(([s, o]) => `<tr><td>${esc(s)}</td>` + provs.map(p => `<td>${n(`surveyor.${s}.${p}.0`, o[p]?.[0] ?? 0)}</td><td>${n(`surveyor.${s}.${p}.1`, o[p]?.[1] ?? 0)}</td>`).join('') + '</tr>').join('') + '</tbody>';
+  $('#tOtros').innerHTML = `<tbody><tr><td>Paquete ISB 20' (1 a 4 cont.)</td><td>${n('paqueteISB.c20_1a4', V.paqueteISB.c20_1a4)}</td></tr>
+    <tr><td>Paquete ISB 20' (5 o más)</td><td>${n('paqueteISB.c20_5mas', V.paqueteISB.c20_5mas)}</td></tr><tr><td>Paquete ISB 40'</td><td>${n('paqueteISB.c40', V.paqueteISB.c40)}</td></tr>
+    <tr><td>Ingreso a terminal 20'</td><td>${n('terminal.0', V.terminal[0])}</td></tr><tr><td>Ingreso a terminal 40'</td><td>${n('terminal.1', V.terminal[1])}</td></tr>` +
+    Object.entries(V.plantas).map(([p, v]) => `<tr><td>Planta ${esc(p)} · cualquier grano / alubia-garbanzo (USD/TN)</td><td><div class="row">${n(`plantas.${p}.0`, v[0])}${n(`plantas.${p}.1`, v[1])}</div></td></tr>`).join('') + '</tbody>';
+  $('#tNcm').innerHTML = '<tbody>' + Object.entries(V.ncm).map(([p, v]) => `<tr><td>${esc(p)}</td><td><input data-tn2="${esc(p)}" value="${esc(v)}" style="max-width:220px"${ro}></td></tr>`).join('') + '</tbody>';
   $('#selProd').innerHTML = Object.keys(T.ncm).map(p => `<option>${esc(p)}</option>`).join('');
   $('#selPlanta').innerHTML = Object.keys(T.plantas).map(p => `<option>${esc(p)}</option>`).join('');
   $('#selProd').value = S.producto; $('#selPlanta').value = S.merc.planta;
+  estadoTarifas();
 }
+async function estadoTarifas() {
+  $('#tBar').classList.toggle('dirty', !!Td);
+  $('#bGuardarT').hidden = $('#bDescartar').hidden = !Td; $('#bGuardarT').disabled = false;
+  $('#bReset').hidden = !puedeEditar || !!Td;
+  const el = $('#tEstado');
+  if (!puedeEditar) { el.textContent = 'Solo lectura: las tarifas las modifican los editores.'; return; }
+  if (Td) { el.textContent = 'Tenés cambios sin guardar. Las simulaciones siguen usando las tarifas guardadas.'; return; }
+  if (!tMeta?.at) { el.textContent = Store.db ? 'Tarifas compartidas con el equipo.' : 'Tarifas guardadas en este navegador.'; return; }
+  let quien = '';
+  if (USER && tMeta.by) { try { const ps = await USER.profiles([tMeta.by]); quien = ps?.[tMeta.by]?.name || ''; } catch (e) {} }
+  el.textContent = `Última modificación: ${new Date(tMeta.at).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}${quien ? ' por ' + quien : ''}`;
+}
+
 
 /* ---------- Navegación ---------- */
 function ir(v) {
+  if (Td && v !== 'tarifas' && $('#v-tarifas').classList.contains('on')) toast('Ojo: dejaste cambios de tarifas sin guardar');
   $$('.v').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
   $$('#nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === v));
   if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
@@ -830,16 +964,16 @@ document.addEventListener('input', e => {
   const el = e.target;
   if (el.dataset.k) { const v = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? (el.value === '' ? 0 : +el.value) : el.value);
     setP(S, el.dataset.k, el.dataset.k === 'merc.grano' ? +v : v);
-    if (el.dataset.k === 'producto') sincronizarQDesdeSim(false);
+    if (el.dataset.k === 'producto') { sincronizarQDesdeSim(false); pistaCliente(); }
     if (el.dataset.k === 'unidad') { S.tnUnidad = S.unidad === 'camion' ? 27.5 : 24; $('[data-k=tnUnidad]').value = S.tnUnidad; }
     if (el.dataset.k === 'precio') { Q.precio = S.precio; cargarFormQ(); }
     calc(); }
   else if (el.dataset.o) { S.overrides = S.overrides || {}; if (el.value === '') delete S.overrides[el.dataset.o]; else S.overrides[el.dataset.o] = +el.value; calc(); }
   else if (el.dataset.l) { const l = S.lineas.find(x => x.id === el.closest('.ln').dataset.id); l[el.dataset.l] = el.dataset.l === 'valor' ? +el.value : el.value;
     if (el.dataset.l === 'base') { const m = el.closest('.ln').querySelector('[data-l=moneda]'); m.disabled = el.value === 'pct'; } calc(); }
-  else if (el.dataset.q) { Q[el.dataset.q] = el.type === 'checkbox' ? el.checked : el.value; renderCotizar(); guardarBorrador(); }
-  else if (el.dataset.t) { const ks = el.dataset.t.split('.'); const last = ks.pop(); const o = ks.reduce((a, k) => a[k] ??= (isNaN(+last) ? {} : [0, 0]), T); o[last] = el.tagName === 'SELECT' ? el.value : +el.value; guardarTarifas(); calc(); }
-  else if (el.dataset.tn2) { T.ncm[el.dataset.tn2] = el.value; guardarTarifas(); if (el.dataset.tn2 === S.producto) { Q.ncm = el.value; cargarFormQ(); } }
+  else if (el.dataset.q) { Q[el.dataset.q] = el.type === 'checkbox' ? el.checked : el.value; if (el.dataset.q === 'cliente') autocompletarCliente(); renderCotizar(); guardarBorrador(); }
+  else if (el.dataset.t) { const ks = el.dataset.t.split('.'); const last = ks.pop(); if (!puedeEditar) return; Td ??= clone(T); const o = ks.reduce((a, k) => a[k] ??= (isNaN(+last) ? {} : [0, 0]), Td); o[last] = el.tagName === 'SELECT' ? el.value : +el.value; estadoTarifas(); }
+  else if (el.dataset.tn2) { if (!puedeEditar) return; Td ??= clone(T); Td.ncm[el.dataset.tn2] = el.value; estadoTarifas(); }
   else if (el.id === 'objV' || el.id === 'objT') calcObjetivo();
   else if (el.id === 'hBuscar') renderHist();
 });
@@ -859,28 +993,55 @@ $('#dlgOk').textContent = 'Confirmar';
 $('#bGuardar').onclick = () => guardar(false);
 $('#objUsar').onclick = () => { const p = calcObjetivo(); if (isFinite(p)) { S.precio = Math.round(p * 100) / 100; Q.precio = S.precio; cargarFormSim(); cargarFormQ(); toast('Precio actualizado'); } };
 $('#bPDF').onclick = descargarPDF;
+$('#bVentas').onclick = () => cargarVentas(true);
 $('#bPrecioSim').onclick = () => { Q.precio = S.precio; cargarFormQ(); renderCotizar(); };
-$('#bReset').onclick = async () => { if (await pedirConfirmacion('¿Volver todas las tarifas a los valores de la planilla?')) { T = clone(TARIFAS_BASE); await Store.set('tarifas', T); renderTarifas(); calc(); toast('Tarifas restauradas'); } };
+$('#bReset').onclick = async () => { if (await pedirConfirmacion('Se cargan los valores de la planilla como borrador. Se aplican recién cuando toques Guardar. ¿Seguir?')) { Td = clone(TARIFAS_BASE); renderTarifas(); } };
+$('#bGuardarT').onclick = async () => {
+  if (!Td || !puedeEditar) return; $('#bGuardarT').disabled = true;
+  if (!(await Store.setTarifas(Td))) { $('#bGuardarT').disabled = false; return; }
+  T = Td; Td = null; if (T.ncm[S.producto] != null) { Q.ncm = T.ncm[S.producto]; cargarFormQ(); }
+  renderTarifas(); calc(); toast('Tarifas guardadas');
+};
+$('#bDescartar').onclick = () => { Td = null; renderTarifas(); toast('Cambios descartados'); };
+window.addEventListener('beforeunload', e => { if (Td) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- Inicio ---------- */
-function mezclarTarifas(t) { const b = clone(TARIFAS_BASE); if (!t) return b; for (const k in b) if (t[k] != null) b[k] = typeof b[k] === 'object' && !Array.isArray(b[k]) ? { ...b[k], ...t[k] } : t[k]; return b; }
+function mezclarTarifas(t) {
+  const b = clone(TARIFAS_BASE); if (!t) return b;
+  for (const k in b) if (t[k] != null) b[k] = typeof b[k] === 'object' && !Array.isArray(b[k]) ? { ...b[k], ...clone(t[k]) } : clone(t[k]);
+  for (const p in TARIFAS_BASE.ncm) if (!b.ncm[p]) b.ncm[p] = TARIFAS_BASE.ncm[p]; // completa NCM vacíos
+  return b;
+}
 async function iniciar() {
-  T = mezclarTarifas(Store.lsGet('tarifas', null));
+  T = mezclarTarifas(Store.lsGet('tarifas', null)); tMeta = Store.lsGet('tarifasMeta', null);
   const bor = Store.lsGet('borrador', null); if (bor?.S?.lineas) { S = bor.S; Q = { ...Q, ...bor.Q }; }
-  ajustes = Store.lsGet('ajustes', ajustes);
+  ajustes = Store.lsGet('ajustes', ajustes); VENTAS = Store.lsGet('ventas', null);
   renderTarifas(); cargarFormSim(); sincronizarQDesdeSim(!bor); cargarFormQ(); ir(location.hash.slice(1) || 'simular');
   if (window.claude?.use) {
     try {
       const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
       const uid = user ? await user.id() : null;
       if (db && uid) {
-        Store.db = db; Store.uid = uid;
-        const t = await Store.get('tarifas', null); if (t) { T = mezclarTarifas(t); Store.lsSet('tarifas', T); renderTarifas(); calc(); }
+        Store.db = db; Store.uid = uid; USER = user; tMeta = null;
+        const si = async f => { try { return (await f()) === true; } catch (e) { return false; } };
+        puedeEditar = (await si(() => user.canEdit())) || (await si(() => user.isOwner()));
+        const ref = db.doc('config/tarifas');
+        const snap = await ref.get().catch(() => null);
+        if (snap && !snap.exists && puedeEditar) { // primera vez: sube las tarifas que ya tenía el dueño
+          const propias = await Store.get('tarifas', null);
+          if (propias) await Store.setTarifas(mezclarTarifas(propias));
+        }
+        ref.onSnapshot(s => {
+          if (!s.exists) return; const d = s.data(); tMeta = d._meta || null;
+          T = mezclarTarifas(d); Store.lsSet('tarifas', T);
+          if (!Td) { renderTarifas(); calc(); } else estadoTarifas();
+        }, () => {});
         const a = await Store.get('ajustes', null); if (a) ajustes = a;
+        renderTarifas();
       }
     } catch (e) {}
   }
-  cargarHist();
+  cargarHist(); cargarVentas(false);
 }
 iniciar();
 }
