@@ -258,8 +258,8 @@ const TARIFAS_BASE = {
   plantas: { Legucer: [60, 60], Caballero: [60, 55] }, // [cualquier grano, alubia/garbanzo]
   ncm: {
     Garbanzo: '0713.20.90', 'Poroto Mungo': '0713.31.90.900N', 'Poroto Adzuki': '0713.32.90.100G',
-    'Poroto Negro': '0713.33.19.100J', 'Poroto Alubia': '0713.33.29.11', 'Poroto Colorado Light': '0713.33.99.112',
-    'Poroto Colorado Dark': '0713.33.99.122Y', 'Poroto Cranberry': '0713.33.99.929G', 'Azúcar': '1701.99.00.900G'
+    'Poroto Negro': '0713.33.19.100J', 'Poroto Alubia': '0713.33.29.11', 'Poroto Light': '0713.33.99.112',
+    'Poroto Dark': '0713.33.99.122Y', 'Poroto Cranberry': '0713.33.99.929G', 'Azúcar': '1701.99.00.900G'
   }
 };
 
@@ -446,9 +446,9 @@ const CATALOGO = {
     desc: [['Forma ovalada, moteada en tonos crema y granate.', 'Calibre (gramaje): 180 a 230, según lote.'], ['Oval shape, speckled in cream and maroon tones.', 'Size (count): 180 to 230, depending on lot.']], calibre: '180/230' },
   'Poroto Alubia': { img: 'alubia', en: 'White Kidney Bean (Alubia)', cosecha: ['Mayo - Junio', 'May - June'],
     desc: [['Forma arriñonada alargada, color blanco marfil.', 'Calibre (gramaje): 180 a 230, según lote.'], ['Elongated kidney shape, ivory white colour.', 'Size (count): 180 to 230, depending on lot.']], calibre: '180/230' },
-  'Poroto Colorado Light': { img: 'colorado-light', en: 'Light Red Kidney Bean', cosecha: ['Abril - Mayo', 'April - May'],
+  'Poroto Light': { img: 'colorado-light', en: 'Light Red Kidney Bean', cosecha: ['Abril - Mayo', 'April - May'],
     desc: [['Forma arriñonada clásica, color rojo claro.', 'Calibre (gramaje): 180 a 230, según lote.'], ['Classic kidney shape, light red colour.', 'Size (count): 180 to 230, depending on lot.']], calibre: '180/230' },
-  'Poroto Colorado Dark': { img: 'colorado-dark', en: 'Dark Red Kidney Bean', cosecha: ['Abril - Mayo', 'April - May'],
+  'Poroto Dark': { img: 'colorado-dark', en: 'Dark Red Kidney Bean', cosecha: ['Abril - Mayo', 'April - May'],
     desc: [['Forma arriñonada clásica, color rojo oscuro intenso.', 'Calibre (gramaje): 180 a 230, según lote.'], ['Classic kidney shape, deep dark red colour.', 'Size (count): 180 to 230, depending on lot.']], calibre: '180/230' },
   'Azúcar': { img: null, en: 'Sugar', cosecha: null, desc: null, calibre: '' }
 };
@@ -925,7 +925,7 @@ function renderHist() {
 }
 function abrir(id, duplicar) {
   const h = HIST.find(x => x.id === id); if (!h) return;
-  S = clone(h.S); Q = clone(h.Q); actualId = duplicar ? null : id;
+  S = clone(h.S); S.producto = renProd(S.producto); Q = clone(h.Q); actualId = duplicar ? null : id;
   if (duplicar) { Q.numero = ''; Q.fecha = hoyISO(); }
   cargarFormSim(); cargarFormQ(); ir('simular'); toast(duplicar ? 'Copia lista para editar' : 'Simulación abierta');
 }
@@ -1025,15 +1025,18 @@ $('#bDescartar').onclick = () => { Td = null; renderTarifas(); toast('Cambios de
 window.addEventListener('beforeunload', e => { if (Td) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- Inicio ---------- */
+const RENOMBRE = { 'Poroto Colorado Light': 'Poroto Light', 'Poroto Colorado Dark': 'Poroto Dark' };
+const renProd = p => RENOMBRE[p] || p;
 function mezclarTarifas(t) {
   const b = clone(TARIFAS_BASE); if (!t) return b;
+  if (t.ncm) { t = { ...t, ncm: { ...t.ncm } }; for (const [v, n] of Object.entries(RENOMBRE)) if (v in t.ncm) { if (t.ncm[v] && !t.ncm[n]) t.ncm[n] = t.ncm[v]; delete t.ncm[v]; } }
   for (const k in b) if (t[k] != null) b[k] = typeof b[k] === 'object' && !Array.isArray(b[k]) ? { ...b[k], ...clone(t[k]) } : clone(t[k]);
   for (const p in TARIFAS_BASE.ncm) if (!b.ncm[p]) b.ncm[p] = TARIFAS_BASE.ncm[p]; // completa NCM vacíos
   return b;
 }
 async function iniciar() {
   T = mezclarTarifas(Store.lsGet('tarifas', null)); tMeta = Store.lsGet('tarifasMeta', null);
-  const bor = Store.lsGet('borrador', null); if (bor?.S?.lineas) { S = bor.S; Q = { ...Q, ...bor.Q }; }
+  const bor = Store.lsGet('borrador', null); if (bor?.S?.lineas) { S = bor.S; S.producto = renProd(S.producto); Q = { ...Q, ...bor.Q }; }
   ajustes = Store.lsGet('ajustes', ajustes); VENTAS = Store.lsGet('ventas', null);
   renderTarifas(); cargarFormSim(); sincronizarQDesdeSim(!bor); cargarFormQ(); ir(location.hash.slice(1) || 'simular');
   if (GAS) {
